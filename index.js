@@ -103,14 +103,28 @@ function questionEmbed(game, question, roundNum) {
     .setTimestamp();
 }
 
+function sanitize(str, fallback = "—") {
+  if (!str || typeof str !== "string") return fallback;
+  const trimmed = str.trim();
+  return trimmed.length === 0 ? fallback : trimmed.slice(0, 1024);
+}
+
+function sanitizeName(str, fallback = "Unknown") {
+  if (!str || typeof str !== "string") return fallback;
+  const trimmed = str.trim();
+  return trimmed.length === 0 ? fallback : trimmed.slice(0, 256);
+}
+
 function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
   const fields = [];
 
   for (const [playerId, j] of Object.entries(judgements)) {
     const player = game.players.get(playerId);
-    const name = player?.username || playerId;
-    const answer = game.roundAnswers.get(playerId) || "*(no answer)*";
-    const corrected = j.corrected ? ` *(fixed: ${j.corrected})*` : "";
+    const name = sanitizeName(player?.username || playerId);
+    const rawAnswer = game.roundAnswers.get(playerId) || "";
+    const answer = sanitize(rawAnswer, "*(no answer)*");
+    const corrected = j.corrected ? ` *(fixed: ${sanitize(j.corrected)})*` : "";
+    const reason = sanitize(j.reason, "No reason given");
 
     let status;
     if (j.pass) {
@@ -118,14 +132,14 @@ function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
     } else if (j.matchesAI) {
       status = "💀 MATCHED AI";
     } else if (j.duplicateOf) {
-      status = `🔁 DUPLICATE of ${j.duplicateOf}`;
+      status = `🔁 DUPLICATE of ${sanitizeName(j.duplicateOf)}`;
     } else {
       status = "❌ ELIMINATED";
     }
 
     fields.push({
-      name: `${status} — ${name}`,
-      value: `Answer: **${answer}**${corrected}\n_${j.reason}_`,
+      name: sanitizeName(`${status} — ${name}`),
+      value: sanitize(`Answer: **${answer}**${corrected}\n_${reason}_`),
       inline: false,
     });
   }
@@ -134,7 +148,7 @@ function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
   for (const p of game.getActivePlayers()) {
     if (!game.roundAnswers.has(p.id) && judgements && !judgements[p.id]) {
       fields.push({
-        name: `❌ ELIMINATED — ${p.username}`,
+        name: sanitizeName(`❌ ELIMINATED — ${p.username}`),
         value: "Gave no answer this round.",
         inline: false,
       });
@@ -148,7 +162,7 @@ function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
     .setTitle(`📊 Round ${roundNum} Results`)
     .setDescription(
       `**Question:** ${question.question}\n` +
-      `🤖 **AI's Answer:** \`${aiAnswer}\`\n\n` +
+      `🤖 **AI's Answer:** \`${sanitize(aiAnswer, "???")}\`\n\n` +
       (survivors.length > 0
         ? `**Still standing:** ${survivors.map(p => p.username).join(", ")}`
         : "**Nobody survived this round!**")
@@ -328,7 +342,24 @@ async function resolveRound(game, channel) {
 
   // Send result embed
   game.phase = "result";
-  await channel.send({ embeds: [resultEmbed(game, question, aiAnswer, judgements, game.round)] });
+  try {
+    await channel.send({ embeds: [resultEmbed(game, question, aiAnswer, judgements, game.round)] });
+  } catch (embedErr) {
+    console.error("Result embed error:", embedErr.message);
+    // Fallback plain text summary so the game can still continue
+    const lines = Object.entries(judgements).map(([pid, j]) => {
+      const p = game.players.get(pid);
+      const uname = p?.username || pid;
+      const ans = game.roundAnswers.get(pid) || "(no answer)";
+      const status = j.pass ? "✅ SAFE" : j.matchesAI ? "💀 MATCHED AI" : "❌ OUT";
+      return `${status} **${uname}**: ${ans}`;
+    });
+    await channel.send(
+      `📊 **Round ${game.round} Results**\n🤖 AI Answer: \`${aiAnswer || "???"}\`\n\n` +
+      (lines.join("\n") || "No answers.") +
+      `\n\nStill in: ${game.getActivePlayers().map(p => p.username).join(", ") || "Nobody"}`
+    ).catch(() => {});
+  }
 
   // Check win condition
   const survivors = game.getActivePlayers();
