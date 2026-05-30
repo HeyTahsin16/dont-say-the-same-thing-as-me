@@ -115,9 +115,9 @@ const questions = [
   {
     id: "q15",
     category: "10-20",
-    question: "Name a type of cloud.",
-    exampleAnswers: ["Cumulus", "Stratus", "Cirrus", "Nimbus", "Cumulonimbus", "Stratocumulus", "Altostratus", "Altocumulus", "Cirrostratus", "Nimbostratus"],
-    hint: "Official meteorological cloud types."
+    question: "Name a country in southeast asia.",
+    exampleAnswers: ["China", "Taiwan", "Japan", "Malaysia", "Myanmar", "Indonesia", "Vietnam", "Thailand", "Singapore", "Philippines"],
+    hint: "The countries in ASEAN organization."
   },
 
   // ─────────────────────────────────────────────
