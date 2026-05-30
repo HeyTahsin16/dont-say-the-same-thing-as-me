@@ -2,7 +2,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 let genAI = null;
 
-// Available free Gemini models (as of mid-2025)
 const AVAILABLE_MODELS = [
   "gemini-1.5-flash",
   "gemini-1.5-flash-8b",
@@ -12,7 +11,6 @@ const AVAILABLE_MODELS = [
   "gemini-2.5-flash-preview-05-20",
 ];
 
-// Active model — set from env on startup, changeable at runtime via /setmodel
 let activeModel = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
 function initGemini(apiKey) {
@@ -28,38 +26,41 @@ function setModel(modelName) {
 function getModel() { return activeModel; }
 function getAvailableModels() { return AVAILABLE_MODELS; }
 
-// ─── SANITY CHECK ──────────────────────────────────────────────────────────────
-// After Gemini responds, run a local check to catch obvious wrong match verdicts.
-// If Gemini says "matchesAI: true" but the player's answer and AI's answer share
-// zero significant words, override it to pass: true (player survives).
-function sanityCheckJudgements(aiAnswer, playerAnswers, judgements) {
-  const aiWords = new Set(
-    aiAnswer.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(w => w.length > 2)
-  );
+// ─── LOCAL MATCH CHECK ─────────────────────────────────────────────────────────
+// Do NOT trust Gemini to detect whether a player's answer matches the AI's answer.
+// We do this ourselves in code — it's just string comparison after normalization.
+// Gemini's only job is: (1) pick its answer, (2) decide if each player answer is
+// a VALID answer to the question at all. Match detection is 100% local.
 
-  for (const [playerId, j] of Object.entries(judgements)) {
-    if (!j.matchesAI) continue; // only re-check alleged AI matches
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, "")   // strip punctuation
+    .replace(/\s+/g, " ")           // collapse spaces
+    .trim();
+}
 
-    const playerAns = (playerAnswers[playerId] || "").toLowerCase().replace(/[^a-z0-9\s]/g, "");
-    const playerWords = playerAns.split(/\s+/).filter(w => w.length > 2);
+// Returns true if two answers refer to the same thing.
+// Checks: exact match, one contains the other, or they share all significant words.
+function answersMatch(a, b) {
+  const na = normalize(a);
+  const nb = normalize(b);
 
-    // Check if any word from the player's answer appears in the AI answer or vice versa
-    const hasOverlap = playerWords.some(w => aiWords.has(w)) ||
-      [...aiWords].some(w => playerAns.includes(w));
+  if (!na || !nb) return false;
 
-    if (!hasOverlap) {
-      // No lexical overlap at all — very unlikely to be a real match
-      console.warn(`[sanity] Overriding false match: AI="${aiAnswer}" Player="${playerAnswers[playerId]}" — no word overlap`);
-      judgements[playerId] = {
-        ...j,
-        pass: true,
-        matchesAI: false,
-        reason: `Valid answer (AI said "${aiAnswer}", yours is different)`,
-      };
-    }
-  }
+  // Exact match after normalization
+  if (na === nb) return true;
 
-  return judgements;
+  // One is fully contained in the other (e.g. "the mitochondria" vs "mitochondria")
+  if (na.includes(nb) || nb.includes(na)) return true;
+
+  // All significant words (>2 chars) of one appear in the other
+  const wordsA = na.split(" ").filter(w => w.length > 2);
+  const wordsB = new Set(nb.split(" ").filter(w => w.length > 2));
+  if (wordsA.length > 0 && wordsA.every(w => wordsB.has(w))) return true;
+
+  return false;
 }
 
 // ─── JUDGE ROUND ───────────────────────────────────────────────────────────────
@@ -72,52 +73,47 @@ async function judgeRound({ question, exampleAnswers, playerAnswers }) {
     .map(([id, ans]) => `  - Player "${id}": "${ans}"`)
     .join("\n");
 
+  // NOTE: We deliberately do NOT ask Gemini to detect AI-answer matches.
+  // We only ask it to: (1) pick its answer, (2) decide if each player answer
+  // is a valid, correct answer to the question (ignoring whether it matches AI).
   const prompt = `You are the AI host of "Don't Say The Same Thing As Me" — a Discord game inspired by bradyyourtutor on YouTube.
 
-== YOUR TWO JOBS THIS ROUND ==
-1. Pick YOUR answer to the question (always the single most common/obvious one)
-2. Judge each player's answer independently
+== YOUR TWO JOBS ==
+1. Pick YOUR answer to the question
+2. Decide if each player's answer is a valid, correct answer to the question
 
 == QUESTION ==
 "${question}"
 
-== EXAMPLE VALID ANSWERS (scope reference) ==
+== EXAMPLE VALID ANSWERS (for reference) ==
 [${exampleAnswers.join(", ")}]
 
 == PLAYER ANSWERS ==
 ${playerSection || "  (no players answered)"}
 
-== RULE 1 — PICKING YOUR ANSWER ==
-- Choose the ONE answer that most people would blurt out first without thinking
-- Example: "name a color" → you say "Red", not "Blue" or "Green" or anything else
-- Example: "name a sport" → you say "Football" (soccer globally) or "Soccer" (US), NOT "Cricket" or "Tennis"
-- Give EXACTLY one word or short phrase. No slashes, no "or", no alternatives.
+== JOB 1 — YOUR ANSWER ==
+Pick the single most common, obvious, gut-reaction answer. The one most people say first.
+- "name a color" → "Red"
+- "name a sport" → "Football"
+- "name a planet" → "Earth"
+Give EXACTLY one answer. No slashes, no lists, no alternatives.
 
-== RULE 2 — JUDGING: IS THE ANSWER VALID? ==
-First decide if the player's answer is a real, correct answer to the question at all.
-- VALID: the answer is a real example of what the question asks for
-- INVALID (eliminated, matchesAI: false): gibberish, nonsense, wrong category, factually incorrect
-
-== RULE 3 — JUDGING: DOES IT MATCH YOUR ANSWER? ==
-ONLY apply this if the answer passed Rule 2.
-A MATCH means the player said THE SAME SPECIFIC THING as you — not just the same category.
-- "Rock" vs "Pop" → NOT a match. Both are music genres but they are DIFFERENT genres.
-- "Cricket" vs "Football" → NOT a match. Both are sports but they are DIFFERENT sports.
-- "Soccer" vs "Football" → MATCH. These are the same sport with different regional names.
-- "Colour" vs "Color" → MATCH. Same word, different spelling.
-- "The mitochondria" vs "Mitochondria" → MATCH. Same thing.
-- If in doubt whether two things are truly the same, lean toward NOT a match (pass: true).
+== JOB 2 — VALIDITY JUDGING (NOT match detection) ==
+For each player, decide ONLY: is their answer a real, correct answer to this question?
+- PASS (valid: true) if: it's a genuine, correct answer to the question (even if it's the same as yours — you handle matching separately)
+- FAIL (valid: false) if: gibberish, nonsense, random letters, factually wrong, or completely off-topic
+- Fix obvious typos silently (e.g. "photosyntesis" → "photosynthesis" still passes)
+- Do NOT eliminate based on whether it matches your answer — that is handled elsewhere
 
 == RESPONSE FORMAT ==
-Respond ONLY with raw JSON. No markdown, no backticks, no explanation:
+Respond ONLY with raw JSON. No markdown, no backticks:
 {
   "aiAnswer": "<your single answer>",
   "judgements": {
     "<playerId>": {
-      "pass": true or false,
-      "reason": "<one short sentence explaining why>",
-      "corrected": "<spelling-corrected version if you fixed a typo, else null>",
-      "matchesAI": true or false
+      "valid": true or false,
+      "reason": "<one short sentence>",
+      "corrected": "<corrected spelling if typo fixed, else null>"
     }
   }
 }`;
@@ -129,10 +125,27 @@ Respond ONLY with raw JSON. No markdown, no backticks, no explanation:
     const parsed = JSON.parse(clean);
 
     const aiAnswer = parsed.aiAnswer || "???";
-    let judgements = parsed.judgements || {};
+    const rawJudgements = parsed.judgements || {};
 
-    // Run local sanity check to catch obvious false match verdicts
-    judgements = sanityCheckJudgements(aiAnswer, playerAnswers, judgements);
+    // Now apply match detection ourselves — Gemini has no say in this
+    const judgements = {};
+    for (const [playerId, j] of Object.entries(rawJudgements)) {
+      const playerAns = playerAnswers[playerId] || "";
+      const isMatch = j.valid && answersMatch(playerAns, aiAnswer);
+
+      judgements[playerId] = {
+        pass: j.valid && !isMatch,
+        reason: isMatch
+          ? `Your answer "${playerAns}" matches the AI's answer "${aiAnswer}"`
+          : (j.reason || (j.valid ? "Valid answer" : "Invalid answer")),
+        corrected: j.corrected || null,
+        matchesAI: isMatch,
+      };
+
+      if (isMatch) {
+        console.log(`[match] "${playerAns}" matched AI answer "${aiAnswer}" for player ${playerId}`);
+      }
+    }
 
     return { aiAnswer, judgements };
   } catch (err) {
