@@ -1,0 +1,609 @@
+require("dotenv").config();
+
+const {
+  Client,
+  GatewayIntentBits,
+  Events,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  EmbedBuilder,
+  Colors,
+} = require("discord.js");
+
+const { initGemini, judgeRound, setModel, getModel, getAvailableModels } = require("./gemini");
+const { createGame, getGame, endGame, ROUND_DURATION_MS, RESULT_DURATION_MS } = require("./gameState");
+const { getQuestionByCategory, getOpeningCategory, getNextCategory } = require("./questions");
+const { recordWin, getTopPlayers } = require("./leaderboard");
+
+// ─── ENV CHECKS ────────────────────────────────────────────────────────────────
+const TOKEN = process.env.DISCORD_TOKEN;
+const CLIENT_ID = process.env.CLIENT_ID;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const OWNER_ID = process.env.DISCORD_OWNER_ID; // optional — only this user can /setmodel
+
+if (!TOKEN || !CLIENT_ID || !GEMINI_KEY) {
+  console.error("❌  Missing env vars. Check your .env file.");
+  process.exit(1);
+}
+
+initGemini(GEMINI_KEY);
+
+// ─── SLASH COMMANDS ────────────────────────────────────────────────────────────
+const commands = [
+  new SlashCommandBuilder()
+    .setName("startgame")
+    .setDescription("Start a new round of the word minigame in this channel."),
+
+  new SlashCommandBuilder()
+    .setName("endgame")
+    .setDescription("Force-end the current game (host/mod only)."),
+
+  new SlashCommandBuilder()
+    .setName("leaderboard")
+    .setDescription("Show the all-time winners leaderboard."),
+
+  new SlashCommandBuilder()
+    .setName("setmodel")
+    .setDescription("Switch the Gemini model (owner only). Useful when hitting rate limits.")
+    .addStringOption(opt =>
+      opt
+        .setName("model")
+        .setDescription("Gemini model name to switch to")
+        .setRequired(true)
+        .addChoices(
+          { name: "gemini-1.5-flash (default, fast)", value: "gemini-1.5-flash" },
+          { name: "gemini-1.5-flash-8b (lightest)", value: "gemini-1.5-flash-8b" },
+          { name: "gemini-1.5-pro (smarter, lower limit)", value: "gemini-1.5-pro" },
+          { name: "gemini-2.0-flash (newest fast)", value: "gemini-2.0-flash" },
+          { name: "gemini-2.0-flash-lite (lightest 2.0)", value: "gemini-2.0-flash-lite" },
+          { name: "gemini-2.5-flash-preview (best quality)", value: "gemini-2.5-flash-preview-05-20" },
+        )
+    ),
+
+  new SlashCommandBuilder()
+    .setName("help")
+    .setDescription("How to play the minigame."),
+].map(c => c.toJSON());
+
+// ─── REGISTER COMMANDS ─────────────────────────────────────────────────────────
+async function registerCommands() {
+  const rest = new REST({ version: "10" }).setToken(TOKEN);
+  try {
+    console.log("Registering slash commands…");
+    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    console.log("✅  Slash commands registered globally.");
+  } catch (err) {
+    console.error("Failed to register commands:", err);
+  }
+}
+
+// ─── CLIENT ────────────────────────────────────────────────────────────────────
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
+
+// ─── EMBED HELPERS ─────────────────────────────────────────────────────────────
+function questionEmbed(game, question, roundNum) {
+  const activePlayers = game.getActivePlayers();
+  return new EmbedBuilder()
+    .setColor(Colors.Blue)
+    .setTitle(`🎮 Round ${roundNum} — Category: **${question.category}** answers`)
+    .setDescription(
+      `**Question:** ${question.question}\n\n` +
+      `⏱️ **You have 60 seconds to type your answer in this channel!**\n` +
+      `Just send a message — no command needed.\n\n` +
+      `👥 Players still in: **${activePlayers.map(p => p.username).join(", ") || "none"}**`
+    )
+    .setFooter({ text: `Round ends in 60 seconds • ${activePlayers.length} player(s) active` })
+    .setTimestamp();
+}
+
+function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
+  const fields = [];
+
+  for (const [playerId, j] of Object.entries(judgements)) {
+    const player = game.players.get(playerId);
+    const name = player?.username || playerId;
+    const answer = game.roundAnswers.get(playerId) || "*(no answer)*";
+    const corrected = j.corrected ? ` *(fixed: ${j.corrected})*` : "";
+
+    let status;
+    if (j.pass) {
+      status = "✅ SAFE";
+    } else if (j.matchesAI) {
+      status = "💀 MATCHED AI";
+    } else if (j.duplicateOf) {
+      status = `🔁 DUPLICATE of ${j.duplicateOf}`;
+    } else {
+      status = "❌ ELIMINATED";
+    }
+
+    fields.push({
+      name: `${status} — ${name}`,
+      value: `Answer: **${answer}**${corrected}\n_${j.reason}_`,
+      inline: false,
+    });
+  }
+
+  // Players who didn't answer at all (round 2+)
+  for (const p of game.getActivePlayers()) {
+    if (!game.roundAnswers.has(p.id) && judgements && !judgements[p.id]) {
+      fields.push({
+        name: `❌ ELIMINATED — ${p.username}`,
+        value: "Gave no answer this round.",
+        inline: false,
+      });
+    }
+  }
+
+  const survivors = game.getActivePlayers();
+
+  return new EmbedBuilder()
+    .setColor(Colors.Gold)
+    .setTitle(`📊 Round ${roundNum} Results`)
+    .setDescription(
+      `**Question:** ${question.question}\n` +
+      `🤖 **AI's Answer:** \`${aiAnswer}\`\n\n` +
+      (survivors.length > 0
+        ? `**Still standing:** ${survivors.map(p => p.username).join(", ")}`
+        : "**Nobody survived this round!**")
+    )
+    .addFields(fields.length ? fields : [{ name: "No answers recorded", value: "—" }])
+    .setFooter({ text: "Next round starts in 10 seconds…" })
+    .setTimestamp();
+}
+
+function winnerEmbed(winner) {
+  return new EmbedBuilder()
+    .setColor(Colors.Green)
+    .setTitle("🏆 We Have a Winner!")
+    .setDescription(`Congratulations **${winner.username}**! You are the last one standing!`)
+    .setFooter({ text: "Use /startgame to play again • /leaderboard for rankings" })
+    .setTimestamp();
+}
+
+function drawEmbed() {
+  return new EmbedBuilder()
+    .setColor(Colors.Red)
+    .setTitle("💀 Everyone's Out!")
+    .setDescription("No winner this round — everyone was eliminated at the same time. Better luck next game!")
+    .setFooter({ text: "Use /startgame to try again" })
+    .setTimestamp();
+}
+
+// ─── GAME LOOP ─────────────────────────────────────────────────────────────────
+async function startRound(game, channel) {
+  const activePlayers = game.getActivePlayers();
+
+  if (activePlayers.length === 0) {
+    await channel.send({ embeds: [drawEmbed()] });
+    endGame(channel.id);
+    return;
+  }
+
+  if (activePlayers.length === 1) {
+    const winner = activePlayers[0];
+    recordWin(winner.id, winner.username);
+    await channel.send({ embeds: [winnerEmbed(winner)] });
+    endGame(channel.id);
+    return;
+  }
+
+  game.round++;
+  game.phase = "answering";
+  game.roundAnswers.clear();
+  game.eliminatedThisRound = [];
+  game.survivorsThisRound = [];
+
+  // Pick question category
+  if (game.round === 1) {
+    game.currentCategory = getOpeningCategory(activePlayers.length);
+  } else {
+    game.currentCategory = getNextCategory(game.currentCategory);
+  }
+
+  // Pick a question not used before
+  let question = null;
+  let tries = 0;
+  do {
+    question = getQuestionByCategory(game.currentCategory);
+    tries++;
+    if (tries > 20) break; // safety valve
+  } while (question && game.usedQuestionIds.has(question.id));
+
+  if (!question) {
+    await channel.send("⚠️ Ran out of questions for this category! Game over.");
+    endGame(channel.id);
+    return;
+  }
+
+  game.usedQuestionIds.add(question.id);
+  game.currentQuestion = question;
+
+  await channel.send({ embeds: [questionEmbed(game, question, game.round)] });
+
+  // Round timer
+  game.roundTimer = setTimeout(async () => {
+    await resolveRound(game, channel);
+  }, ROUND_DURATION_MS);
+}
+
+async function resolveRound(game, channel) {
+  if (game.phase !== "answering") return;
+  game.phase = "judging";
+
+  clearTimeout(game.roundTimer);
+
+  const question = game.currentQuestion;
+  const activeBefore = game.getActivePlayers();
+
+  // Collect answers only from active players
+  const playerAnswers = {};
+  for (const p of activeBefore) {
+    const ans = game.roundAnswers.get(p.id);
+    if (ans) playerAnswers[p.id] = ans;
+  }
+
+  // Detect players who submitted identical answers to each other
+  // Group by normalised answer → anyone sharing an answer with another player is a duplicate
+  const duplicateJudgements = {}; // playerId -> judgement for duplicate collisions
+  const answerGroups = new Map(); // normalisedAnswer -> [playerId, ...]
+  for (const [pid, ans] of Object.entries(playerAnswers)) {
+    const key = ans.trim().toLowerCase();
+    if (!answerGroups.has(key)) answerGroups.set(key, []);
+    answerGroups.get(key).push(pid);
+  }
+  for (const [, group] of answerGroups) {
+    if (group.length > 1) {
+      // All players in this group collided with each other — eliminate them all
+      for (let i = 0; i < group.length; i++) {
+        const othersNames = group
+          .filter((_, j) => j !== i)
+          .map(id => game.players.get(id)?.username || id)
+          .join(", ");
+        duplicateJudgements[group[i]] = {
+          pass: false,
+          reason: `Same answer as ${othersNames} — both eliminated`,
+          corrected: null,
+          matchesAI: false,
+          duplicateOf: othersNames,
+        };
+        // Remove from playerAnswers so Gemini doesn't re-judge them
+        delete playerAnswers[group[i]];
+      }
+    }
+  }
+
+  // Players who are active but gave no answer (round 2+ → eliminate)
+  const noAnswerPlayers = activeBefore.filter(p => !game.roundAnswers.has(p.id));
+
+  // Call Gemini
+  await channel.send("⏱️ Time's up! The AI is judging your answers…");
+
+  let aiAnswer = "???";
+  let judgements = {};
+
+  if (Object.keys(playerAnswers).length > 0) {
+    try {
+      const result = await judgeRound({
+        question: question.question,
+        exampleAnswers: question.exampleAnswers,
+        playerAnswers,
+      });
+      aiAnswer = result.aiAnswer;
+      judgements = result.judgements;
+    } catch (err) {
+      console.error("judgeRound error:", err);
+    }
+  }
+
+  // Merge Gemini judgements with pre-determined duplicate eliminations
+  judgements = { ...judgements, ...duplicateJudgements };
+
+  // Apply all judgements
+  for (const [playerId, j] of Object.entries(judgements)) {
+    if (!j.pass) {
+      game.eliminatePlayer(playerId);
+    }
+  }
+
+  // Eliminate no-answer players (but only from round 2 onwards — round 1 they're just "joining")
+  for (const p of noAnswerPlayers) {
+    if (game.round > 1) {
+      game.eliminatePlayer(p.id);
+      judgements[p.id] = { pass: false, reason: "No answer given", corrected: null, matchesAI: false };
+    }
+    // Round 1: players who didn't answer aren't counted as participants
+    // (they never typed anything so they never "joined")
+  }
+
+  // Send result embed
+  game.phase = "result";
+  await channel.send({ embeds: [resultEmbed(game, question, aiAnswer, judgements, game.round)] });
+
+  // Check win condition
+  const survivors = game.getActivePlayers();
+
+  if (survivors.length === 0) {
+    game.resultTimer = setTimeout(async () => {
+      await channel.send({ embeds: [drawEmbed()] });
+      endGame(channel.id);
+    }, RESULT_DURATION_MS);
+    return;
+  }
+
+  if (survivors.length === 1) {
+    const winner = survivors[0];
+    recordWin(winner.id, winner.username);
+    game.resultTimer = setTimeout(async () => {
+      await channel.send({ embeds: [winnerEmbed(winner)] });
+      endGame(channel.id);
+    }, RESULT_DURATION_MS);
+    return;
+  }
+
+  // Continue to next round
+  game.resultTimer = setTimeout(async () => {
+    await startRound(game, channel);
+  }, RESULT_DURATION_MS);
+}
+
+// ─── MESSAGE HANDLER (answer collection) ───────────────────────────────────────
+client.on(Events.MessageCreate, async (message) => {
+  if (message.author.bot) return;
+
+  const game = getGame(message.channelId);
+  if (!game || game.phase !== "answering") return;
+
+  const userId = message.author.id;
+  const username = message.author.username;
+  const content = message.content.trim();
+
+  if (!content) return;
+
+  // Round 1: anyone who types joins
+  if (game.round === 1 && !game.players.has(userId)) {
+    game.addPlayer(userId, username);
+  }
+
+  // Only active players can answer
+  const player = game.players.get(userId);
+  if (!player || !player.active) return;
+
+  // Record answer (first answer wins, duplicates are flagged)
+  if (!game.roundAnswers.has(userId)) {
+    // Check if another active player already submitted the same answer (case-insensitive)
+    const normalised = content.trim().toLowerCase();
+    const duplicate = [...game.roundAnswers.entries()].find(([otherId, otherAns]) => {
+      if (otherId === userId) return false;
+      return otherAns.trim().toLowerCase() === normalised;
+    });
+
+    if (duplicate) {
+      const [dupId] = duplicate;
+      const dupPlayer = game.players.get(dupId);
+      const dupName = dupPlayer?.username || "someone";
+      try {
+        await message.reply(
+          `⚠️ **Duplicate answer!** **${dupName}** already said \`${content}\`. ` +
+          `You have until the round ends to send a **different** answer!`
+        );
+        await message.react("⚠️");
+      } catch { /* ignore */ }
+      // Don't record — let them try again
+      return;
+    }
+
+    game.roundAnswers.set(userId, content);
+    try {
+      await message.react("📝");
+    } catch { /* ignore react errors */ }
+  }
+});
+
+// ─── INTERACTION HANDLER ───────────────────────────────────────────────────────
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const { commandName, channelId, user, channel } = interaction;
+
+  // ── /startgame ──
+  if (commandName === "startgame") {
+    const existing = getGame(channelId);
+    if (existing && existing.isActive()) {
+      return interaction.reply({
+        content: "⚠️ A game is already running in this channel! Use `/endgame` to stop it first.",
+        ephemeral: true,
+      });
+    }
+
+    const game = createGame(channelId, interaction.guildId, user.id);
+
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Purple)
+          .setTitle("🎮 Don't Say The Same Thing As Me!")
+          .setDescription(
+            "Inspired by **bradyyourtutor** on YouTube!\n\n" +
+            "**How to play:**\n" +
+            "• A question appears — type your answer directly in this channel\n" +
+            "• The AI host secretly picks the most **obvious** answer\n" +
+            "• If your answer **matches the AI** → **eliminated** 💀\n" +
+            "• If your answer **matches another player** → **both eliminated** 🔁\n" +
+            "• If your answer is **wrong or gibberish** → **eliminated** ❌\n" +
+            "• If you **don't answer** (round 2+) → **eliminated** 🚫\n" +
+            "• Anyone who types in round 1 joins — last one standing wins! 🏆\n\n" +
+            "⚠️ **The AI picks the most common answer — don't go with your first instinct!**\n\n" +
+            "The first question launches in **5 seconds…**"
+          )
+          .setFooter({ text: "Type your answer when the question appears!" }),
+      ],
+    });
+
+    setTimeout(async () => {
+      await startRound(game, channel);
+    }, 5000);
+  }
+
+  // ── /endgame ──
+  else if (commandName === "endgame") {
+    const game = getGame(channelId);
+    if (!game) {
+      return interaction.reply({ content: "❌ No game is running right now.", ephemeral: true });
+    }
+    // Only the starter or someone with Manage Messages can force-end
+    const member = interaction.member;
+    const canEnd =
+      game.startedBy === user.id ||
+      member?.permissions?.has("ManageMessages");
+
+    if (!canEnd) {
+      return interaction.reply({
+        content: "❌ Only the game starter or a moderator can force-end the game.",
+        ephemeral: true,
+      });
+    }
+
+    endGame(channelId);
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Red)
+          .setTitle("🛑 Game Ended")
+          .setDescription(`Game force-ended by ${user.username}.`),
+      ],
+    });
+  }
+
+  // ── /leaderboard ──
+  else if (commandName === "leaderboard") {
+    const top = getTopPlayers(10);
+
+    if (top.length === 0) {
+      return interaction.reply({ content: "📋 No games have been won yet!", ephemeral: false });
+    }
+
+    const medals = ["🥇", "🥈", "🥉"];
+    const rows = top.map((p, i) => {
+      const medal = medals[i] || `**${i + 1}.**`;
+      return `${medal} **${p.username}** — ${p.wins} win${p.wins !== 1 ? "s" : ""}`;
+    });
+
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Gold)
+          .setTitle("🏆 All-Time Leaderboard")
+          .setDescription(rows.join("\n"))
+          .setFooter({ text: "Play more games to climb the ranks!" }),
+      ],
+    });
+  }
+
+  // ── /setmodel ──
+  else if (commandName === "setmodel") {
+    // Restrict to owner if DISCORD_OWNER_ID is set, otherwise allow anyone with Manage Guild
+    const member = interaction.member;
+    const isOwner = OWNER_ID ? user.id === OWNER_ID : member?.permissions?.has("ManageGuild");
+
+    if (!isOwner) {
+      return interaction.reply({
+        content: "❌ Only the bot owner can change the Gemini model.",
+        ephemeral: true,
+      });
+    }
+
+    const chosen = interaction.options.getString("model");
+    setModel(chosen);
+
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Teal)
+          .setTitle("🔄 Gemini Model Updated")
+          .setDescription(`Now using **\`${chosen}\`** for all future rounds.`)
+          .addFields({
+            name: "💡 Tip",
+            value:
+              "If you switched because of a rate limit error, the new model takes effect immediately — no restart needed. Any game currently in progress will use the new model from the next round onwards.",
+          })
+          .setFooter({ text: `Changed by ${user.username}` }),
+      ],
+    });
+  }
+
+  // ── /help ──
+  else if (commandName === "help") {
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Blurple)
+          .setTitle("🎮 Don't Say The Same Thing As Me — How to Play")
+          .setDescription("Inspired by **bradyyourtutor** on YouTube (\"Don't Say The Same Thing As Me\" series).")
+          .addFields(
+            {
+              name: "The Core Idea",
+              value:
+                "The AI host secretly picks the **most obvious/common** answer to each question. Your goal is to give a **valid answer that the AI didn't pick**. Think creatively — don't go with your gut!",
+            },
+            {
+              name: "Starting a Game",
+              value: "Use `/startgame` in any channel. The first question will appear shortly.",
+            },
+            {
+              name: "Answering",
+              value:
+                "Just **type your answer** in the channel when the question is shown. You have **60 seconds**. The 📝 reaction confirms your answer was recorded. Only your first message counts.",
+            },
+            {
+              name: "Elimination Rules",
+              value:
+                "• Your answer **matches the AI's answer** → eliminated 💀\n" +
+                "• Your answer **matches another player's answer** → both eliminated 🔁\n" +
+                "• Your answer is **wrong or off-topic** → eliminated ❌\n" +
+                "• Your answer is **gibberish** → eliminated ❌\n" +
+                "• You **don't answer** (round 2+) → eliminated 🚫",
+            },
+            {
+              name: "Typos & Ambiguous Answers",
+              value:
+                "The AI host fixes minor typos automatically. Synonyms and close equivalents are judged fairly — if it clearly means the same thing as a valid answer, it counts.",
+            },
+            {
+              name: "Round Progression",
+              value:
+                "Each round uses a harder category (fewer valid answers). Rounds go:\n`40+` → `20-40` → `10-20` → `5-10` → `1-5` → `1-3`\nThe fewer options there are, the harder it is to avoid the AI!",
+            },
+            {
+              name: "Winning",
+              value: "Last player standing wins and gets a point on the `/leaderboard`!",
+            },
+            {
+              name: "Commands",
+              value:
+                "`/startgame` — Start a new game\n`/endgame` — Force-end (starter or mod only)\n`/leaderboard` — See top winners\n`/setmodel` — Switch Gemini model (owner only)\n`/help` — This message",
+            }
+          ),
+      ],
+      ephemeral: true,
+    });
+  }
+});
+
+// ─── READY ─────────────────────────────────────────────────────────────────────
+client.once(Events.ClientReady, (c) => {
+  console.log(`✅  Logged in as ${c.user.tag}`);
+  console.log(`🤖  Bot is ready! Invite link: https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&permissions=277025459200&scope=bot%20applications.commands`);
+});
+
+// ─── LAUNCH ────────────────────────────────────────────────────────────────────
+(async () => {
+  await registerCommands();
+  await client.login(TOKEN);
+})();
