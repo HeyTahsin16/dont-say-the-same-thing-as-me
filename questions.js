@@ -1,5 +1,5 @@
 // Questions categorized by number of valid answers
-// Categories: "1-3", "1-5", "5-10", "10-20", "20-40", "40+"
+// Categories: "40+", "20-40", "10-20", "5-10", "1-5", "1-3"
 // exampleAnswers help the AI judge what's acceptable
 
 const questions = [
@@ -9,37 +9,37 @@ const questions = [
   {
     id: "q1",
     category: "40+",
-    question: "Name a country in the world.",
-    exampleAnswers: ["France", "Germany", "Japan", "Brazil", "India", "USA", "China", "Canada", "Australia", "Mexico", "Italy", "Spain", "Russia", "Egypt", "Nigeria", "Argentina", "Turkey", "South Korea", "Thailand", "Portugal"],
-    hint: "Any sovereign nation counts."
+    question: "Name a sovereign country in the world.",
+    exampleAnswers: ["France", "Germany", "Japan", "Brazil", "India", "USA", "China", "Canada", "Australia", "Mexico"],
+    hint: "There are about 195 of these."
   },
   {
     id: "q2",
     category: "40+",
-    question: "Name a color.",
-    exampleAnswers: ["Red", "Blue", "Green", "Yellow", "Purple", "Orange", "Pink", "Black", "White", "Brown", "Gray", "Cyan", "Magenta", "Teal", "Indigo", "Violet", "Maroon", "Beige", "Crimson", "Turquoise"],
-    hint: "Any named color works."
+    question: "Name a recognized music genre.",
+    exampleAnswers: ["Pop", "Rock", "Jazz", "Classical", "Hip-hop", "Blues", "Country", "Electronic", "R&B", "Reggae"],
+    hint: "Any recognized style of music counts."
   },
   {
     id: "q3",
     category: "40+",
-    question: "Name a vegetable.",
-    exampleAnswers: ["Carrot", "Broccoli", "Spinach", "Tomato", "Potato", "Onion", "Garlic", "Pea", "Corn", "Lettuce", "Cucumber", "Pepper", "Celery", "Asparagus", "Zucchini", "Eggplant", "Kale", "Radish", "Beet", "Cauliflower"],
-    hint: "Culinary vegetables count."
+    question: "Name an item of clothing.",
+    exampleAnswers: ["Shirt", "Pants", "Socks", "Hat", "Jacket", "Skirt", "Dress", "Sweater", "Gloves", "Scarf"],
+    hint: "Anything you wear on your body."
   },
   {
     id: "q4",
     category: "40+",
-    question: "Name a sport.",
-    exampleAnswers: ["Football", "Basketball", "Tennis", "Cricket", "Baseball", "Hockey", "Swimming", "Golf", "Rugby", "Volleyball", "Boxing", "Cycling", "Skiing", "Badminton", "Table Tennis", "Wrestling", "Gymnastics", "Rowing", "Archery", "Fencing"],
-    hint: "Any recognized sport."
+    question: "Name a fruit.",
+    exampleAnswers: ["Apple", "Banana", "Orange", "Strawberry", "Grape", "Mango", "Pineapple", "Watermelon", "Kiwi", "Peach"],
+    hint: "Botanical or culinary fruits are fine."
   },
   {
     id: "q5",
     category: "40+",
-    question: "Name a type of music genre.",
-    exampleAnswers: ["Pop", "Rock", "Jazz", "Classical", "Hip-hop", "Blues", "Country", "Electronic", "R&B", "Reggae", "Metal", "Folk", "Soul", "Disco", "Punk", "Gospel", "Latin", "Indie", "Techno", "Ambient"],
-    hint: "Any recognized music genre."
+    question: "Name a capital city.",
+    exampleAnswers: ["London", "Tokyo", "Paris", "Washington DC", "Berlin", "Beijing", "Ottawa", "Rome", "Madrid", "Seoul"],
+    hint: "The seat of government for a country."
   },
 
   // ─────────────────────────────────────────────
@@ -48,208 +48,173 @@ const questions = [
   {
     id: "q6",
     category: "20-40",
-    question: "Name a planet in our solar system.",
-    exampleAnswers: ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"],
-    hint: "The 8 official planets."
+    question: "Name a letter in the English alphabet.",
+    exampleAnswers: ["A", "B", "C", "X", "Y", "Z", "Vowels", "Consonants"],
+    hint: "There are exactly 26 of these."
   },
   {
     id: "q7",
     category: "20-40",
-    question: "Name a programming language.",
-    exampleAnswers: ["Python", "JavaScript", "Java", "C++", "C#", "Ruby", "Swift", "Go", "Rust", "TypeScript", "PHP", "Kotlin", "Scala", "R", "MATLAB", "Perl", "Haskell", "Lua", "Dart", "Elixir"],
-    hint: "Any real programming language."
+    question: "Name a member state of the European Union.",
+    exampleAnswers: ["Germany", "France", "Italy", "Spain", "Poland", "Sweden", "Netherlands", "Greece"],
+    hint: "There are 27 current members."
   },
   {
     id: "q8",
     category: "20-40",
-    question: "Name a mammal.",
-    exampleAnswers: ["Dog", "Cat", "Lion", "Elephant", "Whale", "Dolphin", "Horse", "Cow", "Bear", "Tiger", "Gorilla", "Giraffe", "Zebra", "Cheetah", "Wolf", "Fox", "Rabbit", "Deer", "Bat", "Seal"],
-    hint: "Any warm-blooded, fur-bearing animal that nurses young."
+    question: "Name one of the 50 US states.",
+    exampleAnswers: ["California", "Texas", "Florida", "New York", "Illinois", "Ohio", "Georgia", "Michigan", "Washington", "Hawaii"],
+    hint: "There are exactly 50 options."
   },
   {
     id: "q9",
     category: "20-40",
-    question: "Name an element from the periodic table.",
-    exampleAnswers: ["Hydrogen", "Oxygen", "Carbon", "Gold", "Silver", "Iron", "Copper", "Nitrogen", "Helium", "Sodium", "Calcium", "Potassium", "Zinc", "Chlorine", "Magnesium", "Sulfur", "Uranium", "Neon", "Lithium", "Titanium"],
-    hint: "Official IUPAC element names or symbols."
-  },
-  {
-    id: "q10",
-    category: "20-40",
-    question: "Name a US state.",
-    exampleAnswers: ["California", "Texas", "Florida", "New York", "Illinois", "Ohio", "Georgia", "Michigan", "Washington", "Arizona", "Colorado", "Nevada", "Oregon", "Minnesota", "Wisconsin", "Missouri", "Tennessee", "Virginia", "Indiana", "Massachusetts"],
-    hint: "Any of the 50 US states."
+    question: "Name a programming language.",
+    exampleAnswers: ["Python", "JavaScript", "Java", "C++", "C#", "Ruby", "Swift", "Go", "Rust", "TypeScript"],
+    hint: "Any real programming language."
   },
 
   // ─────────────────────────────────────────────
   // 10-20 answers
   // ─────────────────────────────────────────────
   {
+    id: "q10",
+    category: "10-20",
+    question: "Name a month of the Gregorian calendar.",
+    exampleAnswers: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    hint: "There are 12 of these."
+  },
+  {
     id: "q11",
     category: "10-20",
-    question: "Name one of the seven deadly sins.",
-    exampleAnswers: ["Pride", "Greed", "Lust", "Envy", "Gluttony", "Wrath", "Sloth"],
-    hint: "Exactly 7 — pride, greed, lust, envy, gluttony, wrath, sloth."
+    question: "Name a sign of the Western Zodiac.",
+    exampleAnswers: ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"],
+    hint: "There are exactly 12 astrological signs."
   },
   {
     id: "q12",
     category: "10-20",
-    question: "Name a continent.",
-    exampleAnswers: ["Asia", "Africa", "North America", "South America", "Europe", "Australia", "Antarctica"],
-    hint: "The 7 continents."
+    question: "Name a country in South America.",
+    exampleAnswers: ["Brazil", "Argentina", "Colombia", "Peru", "Chile", "Venezuela", "Ecuador", "Bolivia", "Paraguay", "Uruguay", "Guyana", "Suriname"],
+    hint: "There are 12 sovereign nations here."
   },
   {
     id: "q13",
     category: "10-20",
-    question: "Name a type of triangle.",
-    exampleAnswers: ["Equilateral", "Isosceles", "Scalene", "Right", "Acute", "Obtuse"],
-    hint: "Classified by sides or angles."
-  },
-  {
-    id: "q14",
-    category: "10-20",
-    question: "Name a primary or secondary color.",
-    exampleAnswers: ["Red", "Blue", "Yellow", "Green", "Orange", "Purple"],
-    hint: "The 3 primary + 3 secondary colors."
-  },
-  {
-    id: "q15",
-    category: "10-20",
-    question: "Name a country in southeast asia.",
-    exampleAnswers: ["Brunei", "Laos", "Singapore ", "Malaysia", "Myanmar", "Indonesia", "Vietnam", "Thailand", "Cambodia", "Philippines"],
-    hint: "The countries in ASEAN organization."
+    question: "Name one of the original 13 US Colonies.",
+    exampleAnswers: ["Virginia", "Massachusetts", "New York", "Maryland", "Rhode Island", "Connecticut", "New Hampshire", "Delaware", "New Jersey", "Pennsylvania", "North Carolina", "South Carolina", "Georgia"],
+    hint: "The stars on the original US flag."
   },
 
   // ─────────────────────────────────────────────
   // 5-10 answers
   // ─────────────────────────────────────────────
   {
+    id: "q14",
+    category: "5-10",
+    question: "Name a planet in our solar system.",
+    exampleAnswers: ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"],
+    hint: "There are officially 8."
+  },
+  {
+    id: "q15",
+    category: "5-10",
+    question: "Name a continent.",
+    exampleAnswers: ["Asia", "Africa", "North America", "South America", "Europe", "Australia", "Antarctica"],
+    hint: "There are 7 of these."
+  },
+  {
     id: "q16",
     category: "5-10",
-    question: "Name a state of matter.",
-    exampleAnswers: ["Solid", "Liquid", "Gas", "Plasma", "Bose-Einstein condensate"],
-    hint: "Physics-recognized states."
+    question: "Name one of the seven deadly sins.",
+    exampleAnswers: ["Pride", "Greed", "Lust", "Envy", "Gluttony", "Wrath", "Sloth"],
+    hint: "Exactly 7."
   },
   {
     id: "q17",
     category: "5-10",
-    question: "Name a type of rock (geological).",
-    exampleAnswers: ["Igneous", "Sedimentary", "Metamorphic"],
-    hint: "The 3 main geological rock types."
+    question: "Name a standard chess piece.",
+    exampleAnswers: ["King", "Queen", "Rook", "Bishop", "Knight", "Pawn"],
+    hint: "There are 6 distinct types of pieces."
   },
   {
     id: "q18",
     category: "5-10",
-    question: "Name a type of chemical bond.",
-    exampleAnswers: ["Covalent", "Ionic", "Metallic", "Hydrogen bond", "Van der Waals"],
-    hint: "Chemistry-recognized bond types."
-  },
-  {
-    id: "q19",
-    category: "5-10",
-    question: "Name a synonym for 'happy'.",
-    exampleAnswers: ["Joyful", "Content", "Elated", "Cheerful", "Pleased", "Delighted", "Glad", "Ecstatic", "Blissful", "Merry"],
-    hint: "Any word meaning happy."
-  },
-  {
-    id: "q20",
-    category: "5-10",
-    question: "Name one of the five senses.",
-    exampleAnswers: ["Sight", "Hearing", "Touch", "Taste", "Smell"],
-    hint: "Exactly 5 — sight, hearing, touch, taste, smell."
-  },
-  {
-    id: "q21",
-    category: "5-10",
-    question: "Name a type of angle in geometry.",
-    exampleAnswers: ["Acute", "Right", "Obtuse", "Straight", "Reflex", "Full"],
-    hint: "Classified by degree measure."
+    question: "Name a primary or secondary color.",
+    exampleAnswers: ["Red", "Blue", "Yellow", "Green", "Orange", "Purple"],
+    hint: "The 3 primary + 3 secondary colors on a standard color wheel."
   },
 
   // ─────────────────────────────────────────────
-  // 1-5 answers
+  // 1-5 answers (Great for intense semi-finals)
   // ─────────────────────────────────────────────
+  {
+    id: "q19",
+    category: "1-5",
+    question: "Name a main blood type group in the ABO system.",
+    exampleAnswers: ["A", "B", "AB", "O"],
+    hint: "There are 4 main letter groups (ignore positive/negative)."
+  },
+  {
+    id: "q20",
+    category: "1-5",
+    question: "Name a state of matter.",
+    exampleAnswers: ["Solid", "Liquid", "Gas", "Plasma"],
+    hint: "There are 4 fundamental states observable in everyday life."
+  },
+  {
+    id: "q21",
+    category: "1-5",
+    question: "Name a nucleotide base found in DNA.",
+    exampleAnswers: ["Adenine", "Thymine", "Cytosine", "Guanine"],
+    hint: "A, T, C, or G."
+  },
   {
     id: "q22",
     category: "1-5",
-    question: "Name the fastest land animal.",
-    exampleAnswers: ["Cheetah"],
-    hint: "Only one correct answer."
+    question: "Name a suit in a standard deck of playing cards.",
+    exampleAnswers: ["Hearts", "Diamonds", "Clubs", "Spades"],
+    hint: "There are exactly 4."
   },
   {
     id: "q23",
     category: "1-5",
-    question: "Name a synonym for 'small'.",
-    exampleAnswers: ["Tiny", "Little", "Mini", "Micro", "Miniature", "Petite", "Minute", "Compact", "Slight", "Diminutive"],
-    hint: "Words meaning small in size."
-  },
-  {
-    id: "q24",
-    category: "1-5",
-    question: "Name the process by which plants make food using sunlight.",
-    exampleAnswers: ["Photosynthesis"],
-    hint: "One word, a biological process."
-  },
-  {
-    id: "q25",
-    category: "1-5",
-    question: "Name the hardest natural substance on Earth.",
-    exampleAnswers: ["Diamond"],
-    hint: "Scores 10 on the Mohs scale."
-  },
-  {
-    id: "q26",
-    category: "1-5",
-    question: "Name a type of logical fallacy.",
-    exampleAnswers: ["Ad hominem", "Straw man", "False dichotomy", "Slippery slope", "Appeal to authority", "Circular reasoning", "Red herring", "Hasty generalization"],
-    hint: "Recognized logical fallacy names."
+    question: "Name a major ocean on Earth.",
+    exampleAnswers: ["Pacific", "Atlantic", "Indian", "Southern", "Arctic"],
+    hint: "There are 5 recognized oceans."
   },
 
   // ─────────────────────────────────────────────
-  // 1-3 answers (very narrow — great for finals)
+  // 1-3 answers (Very narrow — great for sudden death finals)
   // ─────────────────────────────────────────────
+  {
+    id: "q24",
+    category: "1-3",
+    question: "Name a primary color of light (RGB model).",
+    exampleAnswers: ["Red", "Green", "Blue"],
+    hint: "There are 3."
+  },
+  {
+    id: "q25",
+    category: "1-3",
+    question: "Name a fundamental subatomic particle found in an atom.",
+    exampleAnswers: ["Proton", "Neutron", "Electron"],
+    hint: "There are 3 main ones."
+  },
+  {
+    id: "q26",
+    category: "1-3",
+    question: "Name a branch of the United States Federal Government.",
+    exampleAnswers: ["Executive", "Legislative", "Judicial"],
+    hint: "There are 3 branches."
+  },
   {
     id: "q27",
     category: "1-3",
-    question: "Name the chemical symbol for Gold.",
-    exampleAnswers: ["Au"],
-    hint: "From the Latin 'Aurum'."
-  },
-  {
-    id: "q28",
-    category: "1-3",
-    question: "Name the only even prime number.",
-    exampleAnswers: ["2", "Two"],
-    hint: "Single digit."
-  },
-  {
-    id: "q29",
-    category: "1-3",
-    question: "Name the powerhouse of the cell.",
-    exampleAnswers: ["Mitochondria", "Mitochondrion"],
-    hint: "Biology 101."
-  },
-  {
-    id: "q30",
-    category: "1-3",
-    question: "Name the speed of light unit in a vacuum (approximately, in km/s).",
-    exampleAnswers: ["300000", "299792", "299,792", "300,000"],
-    hint: "Approximately 3 × 10⁵ km/s."
-  },
-  {
-    id: "q31",
-    category: "1-3",
-    question: "Name the author of 'Pride and Prejudice'.",
-    exampleAnswers: ["Jane Austen"],
-    hint: "19th-century English novelist."
-  },
-  {
-    id: "q32",
-    category: "1-3",
-    question: "Name the smallest prime number.",
-    exampleAnswers: ["2", "Two"],
-    hint: "Less than 3."
-  },
+    question: "Name a pole of a standard magnet.",
+    exampleAnswers: ["North", "South"],
+    hint: "There are exactly 2."
+  }
 ];
 
 // Pick a random question from a specific category
