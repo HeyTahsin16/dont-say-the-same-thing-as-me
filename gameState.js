@@ -1,16 +1,17 @@
 // In-memory game state per channel
 const games = new Map(); // channelId -> GameState
 
-const ROUND_DURATION_MS = 60_000;   // 60 seconds for answering
-const RESULT_DURATION_MS = 10_000;  // 10 seconds to show results
+const ROUND_ONE_DURATION_MS = 60_000;  // 60 seconds for round 1 (joining round)
+const ROUND_DURATION_MS     = 20_000;  // 20 seconds for all subsequent rounds
+const RESULT_DURATION_MS    = 10_000;  // 10 seconds to show results
 
 class GameState {
   constructor(channelId, guildId, startedBy) {
-    this.channelId = channelId;
-    this.guildId = guildId;
-    this.startedBy = startedBy;
-    this.phase = "waiting";       // waiting | answering | judging | result | ended
-    this.round = 0;
+    this.channelId  = channelId;
+    this.guildId    = guildId;
+    this.startedBy  = startedBy;
+    this.phase      = "waiting"; // waiting | answering | judging | result | ended
+    this.round      = 0;
     this.currentQuestion = null;
     this.currentCategory = null;
 
@@ -20,15 +21,21 @@ class GameState {
     // playerId -> [{ round, answer, pass, reason }]
     this.history = new Map();
 
-    this.aiAnswer = null;
-    this.roundAnswers = new Map(); // playerId -> answer (collected during round)
+    this.aiAnswer          = null;
+    this.roundAnswers      = new Map(); // playerId -> answer
     this.eliminatedThisRound = [];
-    this.survivorsThisRound = [];
+    this.survivorsThisRound  = [];
 
-    this.roundTimer = null;
+    this.roundTimer  = null;
     this.resultTimer = null;
 
     this.usedQuestionIds = new Set();
+
+    // ── Dynamic difficulty tracking ──────────────────────────────────────────
+    // How many rounds to stay on the current category before re-evaluating.
+    // Randomised between 3–5 each time a new category is locked in.
+    this.roundsOnCurrentCategory = 0;   // how many rounds we've been on this cat
+    this.categoryLockRounds       = 0;  // how many rounds to stay (3-5)
   }
 
   addPlayer(userId, username) {
@@ -46,8 +53,7 @@ class GameState {
 
   recordAnswer(userId, answer) {
     if (!this.roundAnswers.has(userId)) {
-      // First time answering in this round — register them if new
-      if (!this.players.has(userId)) return false; // not a registered player
+      if (!this.players.has(userId)) return false;
     }
     this.roundAnswers.set(userId, answer);
     return true;
@@ -84,4 +90,7 @@ function endGame(channelId) {
   }
 }
 
-module.exports = { createGame, getGame, endGame, ROUND_DURATION_MS, RESULT_DURATION_MS };
+module.exports = {
+  createGame, getGame, endGame,
+  ROUND_ONE_DURATION_MS, ROUND_DURATION_MS, RESULT_DURATION_MS,
+};
