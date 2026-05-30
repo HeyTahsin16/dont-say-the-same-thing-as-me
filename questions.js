@@ -264,23 +264,139 @@ function getRandomQuestion() {
   return questions[Math.floor(Math.random() * questions.length)];
 }
 
-// Category order from most answers to fewest (used for round progression)
+// Category order from most answers to fewest
 const CATEGORY_ORDER = ["40+", "20-40", "10-20", "5-10", "1-5", "1-3"];
 
-// Get opening round category based on player count
-function getOpeningCategory(playerCount) {
-  if (playerCount >= 10) return "40+";
-  if (playerCount >= 6) return "20-40";
-  if (playerCount >= 4) return "10-20";
-  if (playerCount >= 3) return "5-10";
-  return "1-5";
+// ── Dynamic category selection ──────────────────────────────────────────────
+//
+// Category is chosen based on how many players are STILL ACTIVE — not just
+// on which round it is. This prevents good players getting unfairly cut off
+// just because the round number ticked up.
+//
+// Thresholds (generous — we want lots of breathing room at each tier):
+//   30+  players  → "40+"
+//   15+  players  → "20-40"
+//   8+   players  → "10-20"
+//   4+   players  → "5-10"
+//   2-3  players  → "1-5"
+//   1    player   → "1-3"  (shouldn't reach here — game ends at 1)
+//
+// The category only ADVANCES (gets harder) when:
+//   (a) We've been on this category for `categoryLockRounds` rounds (3–5, random), AND
+//   (b) The player count has dropped enough that the next category fits.
+//
+// It can also DROP BACK if lots of players join mid-game (unlikely but safe).
+
+function getCategoryForPlayerCount(count) {
+  if (count >= 30) return "40+";
+  if (count >= 15) return "20-40";
+  if (count >= 8)  return "10-20";
+  if (count >= 4)  return "5-10";
+  if (count >= 2)  return "1-5";
+  return "1-3";
 }
 
-// Get next (harder) category
+// Returns a random lock duration of 3, 4, or 5 rounds
+function randomLockDuration() {
+  return 3 + Math.floor(Math.random() * 3); // 3, 4, or 5
+}
+
+// Get next harder category (one step)
 function getNextCategory(currentCategory) {
   const idx = CATEGORY_ORDER.indexOf(currentCategory);
   if (idx === -1 || idx >= CATEGORY_ORDER.length - 1) return CATEGORY_ORDER[CATEGORY_ORDER.length - 1];
   return CATEGORY_ORDER[idx + 1];
 }
 
-module.exports = { questions, getQuestionByCategory, getRandomQuestion, CATEGORY_ORDER, getOpeningCategory, getNextCategory };
+// Get previous easier category (one step)
+function getPrevCategory(currentCategory) {
+  const idx = CATEGORY_ORDER.indexOf(currentCategory);
+  if (idx <= 0) return CATEGORY_ORDER[0];
+  return CATEGORY_ORDER[idx - 1];
+}
+
+// Compare two categories: returns negative if a < b (a is easier), 0 if equal, positive if a > b (a is harder)
+function compareDifficulty(a, b) {
+  return CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b);
+}
+
+/**
+ * Decide the category for the upcoming round.
+ * Mutates game.currentCategory, game.roundsOnCurrentCategory, game.categoryLockRounds.
+ *
+ * @param {GameState} game
+ * @param {number} activePlayerCount
+ * @returns {string} the chosen category
+ */
+function resolveCategory(game, activePlayerCount) {
+  // Round 1: always use the widest category regardless of player count
+  // (players haven't joined yet so count is 0)
+  if (game.round === 1) {
+    const cat = "40+";
+    game.currentCategory = cat;
+    game.roundsOnCurrentCategory = 1;
+    game.categoryLockRounds = randomLockDuration();
+    return cat;
+  }
+
+  // What category does the current player count naturally call for?
+  const naturalCat = getCategoryForPlayerCount(activePlayerCount);
+
+  // If we don't have a current category yet, just use the natural one
+  if (!game.currentCategory) {
+    game.currentCategory = naturalCat;
+    game.roundsOnCurrentCategory = 1;
+    game.categoryLockRounds = randomLockDuration();
+    return naturalCat;
+  }
+
+  game.roundsOnCurrentCategory++;
+
+  const lockedIn = game.roundsOnCurrentCategory <= game.categoryLockRounds;
+  const currentIdx = CATEGORY_ORDER.indexOf(game.currentCategory);
+  const naturalIdx = CATEGORY_ORDER.indexOf(naturalCat);
+
+  if (lockedIn) {
+    // Still within the lock window — stay on current category UNLESS
+    // player count has dropped dramatically (2+ tiers harder warranted)
+    if (naturalIdx >= currentIdx + 2) {
+      // Big drop in players — skip ahead to keep things spicy
+      const newCat = CATEGORY_ORDER[Math.min(currentIdx + 1, CATEGORY_ORDER.length - 1)];
+      game.currentCategory = newCat;
+      game.roundsOnCurrentCategory = 1;
+      game.categoryLockRounds = randomLockDuration();
+      return newCat;
+    }
+    // Normal lock — stay put
+    return game.currentCategory;
+  }
+
+  // Lock window expired — re-evaluate based on player count
+  // Move toward the natural category (one step at a time)
+  let newCat = game.currentCategory;
+  if (naturalIdx > currentIdx) {
+    // Natural is harder — step up one
+    newCat = CATEGORY_ORDER[currentIdx + 1];
+  } else if (naturalIdx < currentIdx) {
+    // Natural is easier (e.g. players didn't drop) — step back one
+    newCat = CATEGORY_ORDER[Math.max(currentIdx - 1, 0)];
+  }
+  // else: same difficulty — stay but reset lock
+
+  game.currentCategory = newCat;
+  game.roundsOnCurrentCategory = 1;
+  game.categoryLockRounds = randomLockDuration();
+  return newCat;
+}
+
+module.exports = {
+  questions,
+  getQuestionByCategory,
+  getRandomQuestion,
+  CATEGORY_ORDER,
+  getCategoryForPlayerCount,
+  resolveCategory,
+  getNextCategory,
+  getPrevCategory,
+  compareDifficulty,
+};
