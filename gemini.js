@@ -25,78 +25,98 @@ function setModel(modelName) {
   console.log(`🔄  Gemini model switched to: ${activeModel}`);
 }
 
-function getModel() {
-  return activeModel;
+function getModel() { return activeModel; }
+function getAvailableModels() { return AVAILABLE_MODELS; }
+
+// ─── SANITY CHECK ──────────────────────────────────────────────────────────────
+// After Gemini responds, run a local check to catch obvious wrong match verdicts.
+// If Gemini says "matchesAI: true" but the player's answer and AI's answer share
+// zero significant words, override it to pass: true (player survives).
+function sanityCheckJudgements(aiAnswer, playerAnswers, judgements) {
+  const aiWords = new Set(
+    aiAnswer.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(w => w.length > 2)
+  );
+
+  for (const [playerId, j] of Object.entries(judgements)) {
+    if (!j.matchesAI) continue; // only re-check alleged AI matches
+
+    const playerAns = (playerAnswers[playerId] || "").toLowerCase().replace(/[^a-z0-9\s]/g, "");
+    const playerWords = playerAns.split(/\s+/).filter(w => w.length > 2);
+
+    // Check if any word from the player's answer appears in the AI answer or vice versa
+    const hasOverlap = playerWords.some(w => aiWords.has(w)) ||
+      [...aiWords].some(w => playerAns.includes(w));
+
+    if (!hasOverlap) {
+      // No lexical overlap at all — very unlikely to be a real match
+      console.warn(`[sanity] Overriding false match: AI="${aiAnswer}" Player="${playerAnswers[playerId]}" — no word overlap`);
+      judgements[playerId] = {
+        ...j,
+        pass: true,
+        matchesAI: false,
+        reason: `Valid answer (AI said "${aiAnswer}", yours is different)`,
+      };
+    }
+  }
+
+  return judgements;
 }
 
-function getAvailableModels() {
-  return AVAILABLE_MODELS;
-}
-
-/**
- * Ask Gemini to:
- * 1. Pick an answer for the question (AI's answer for the round)
- * 2. Judge all player answers
- *
- * Returns:
- * {
- *   aiAnswer: string,
- *   judgements: { [playerId]: { pass: bool, reason: string, corrected: string|null } }
- * }
- */
+// ─── JUDGE ROUND ───────────────────────────────────────────────────────────────
 async function judgeRound({ question, exampleAnswers, playerAnswers }) {
   if (!genAI) throw new Error("Gemini not initialized");
 
   const model = genAI.getGenerativeModel({ model: activeModel });
 
-  // Build the player answers section
   const playerSection = Object.entries(playerAnswers)
     .map(([id, ans]) => `  - Player "${id}": "${ans}"`)
     .join("\n");
 
-  const prompt = `You are the AI host of "Don't Say The Same Thing As Me" — a multiplayer word elimination game inspired by bradyyourtutor on YouTube, where players must give a valid answer to a question WITHOUT matching the answer you choose. Your two jobs each round are:
-1. Pick your own answer to the question
-2. Judge every player's answer
+  const prompt = `You are the AI host of "Don't Say The Same Thing As Me" — a Discord game inspired by bradyyourtutor on YouTube.
 
-GAME CONCEPT (important context for your decisions):
-- This is the Discord bot version of Brady's YouTube series "Don't Say The Same Thing As Me"
-- In Brady's format, the host says a word/category and contestants must give a valid answer that the host didn't pick
-- The skill is in predicting what the host will say and deliberately avoiding it
-- Brady's format rewards players who think creatively and avoid the "obvious" answers the host gravitates toward
-- Like Brady, you should tend to pick the most common/obvious answer for the question — the one most people would instinctively say first. This makes the game fair and predictable, and matching it feels satisfying to watch. For example, for "name a color", you'd say "Red" not "Chartreuse"
-- This means players who play it safe with the first thing that comes to mind are more likely to be eliminated
+== YOUR TWO JOBS THIS ROUND ==
+1. Pick YOUR answer to the question (always the single most common/obvious one)
+2. Judge each player's answer independently
 
-QUESTION: "${question}"
-EXAMPLE VALID ANSWERS (these show you the scope and style of acceptable answers): [${exampleAnswers.join(", ")}]
+== QUESTION ==
+"${question}"
 
-PLAYER ANSWERS:
+== EXAMPLE VALID ANSWERS (scope reference) ==
+[${exampleAnswers.join(", ")}]
+
+== PLAYER ANSWERS ==
 ${playerSection || "  (no players answered)"}
 
-YOUR ANSWER SELECTION RULES:
-- Pick the single most instinctive, common, or "default" answer most people would say first
-- Do NOT try to be clever or surprising — think like the average person's gut reaction
-- Stay within the spirit of the example answers (same type, same level of specificity)
-- Give exactly one answer (no slashes, no "or", no lists)
+== RULE 1 — PICKING YOUR ANSWER ==
+- Choose the ONE answer that most people would blurt out first without thinking
+- Example: "name a color" → you say "Red", not "Blue" or "Green" or anything else
+- Example: "name a sport" → you say "Football" (soccer globally) or "Soccer" (US), NOT "Cricket" or "Tennis"
+- Give EXACTLY one word or short phrase. No slashes, no "or", no alternatives.
 
-JUDGING RULES:
-- Fix minor typos silently and note the correction (e.g. "photosyntesis" → "photosynthesis" is still valid)
-- Accept answers that are clearly synonymous or semantically equivalent to a valid example answer
-- Accept reasonable alternate phrasings (e.g. "the mitochondria" and "mitochondria" are the same)
-- Reject pure gibberish, random keyboard mashing, or completely off-topic answers
-- Reject answers that are factually incorrect for this question
-- MATCH CHECK: if a player's answer and your answer refer to the same thing — even with different phrasing, capitalization, or minor spelling — that is a MATCH and the player is eliminated
-- "pass: true" = player survives (gave a valid answer that doesn't match yours)
-- "pass: false" = player is eliminated (wrong answer, gibberish, or matched your answer)
-- matchesAI should be true ONLY when the answer is correct but matches yours; false for wrong/gibberish eliminations
+== RULE 2 — JUDGING: IS THE ANSWER VALID? ==
+First decide if the player's answer is a real, correct answer to the question at all.
+- VALID: the answer is a real example of what the question asks for
+- INVALID (eliminated, matchesAI: false): gibberish, nonsense, wrong category, factually incorrect
 
-Respond ONLY with valid JSON, no markdown, no explanation outside the JSON:
+== RULE 3 — JUDGING: DOES IT MATCH YOUR ANSWER? ==
+ONLY apply this if the answer passed Rule 2.
+A MATCH means the player said THE SAME SPECIFIC THING as you — not just the same category.
+- "Rock" vs "Pop" → NOT a match. Both are music genres but they are DIFFERENT genres.
+- "Cricket" vs "Football" → NOT a match. Both are sports but they are DIFFERENT sports.
+- "Soccer" vs "Football" → MATCH. These are the same sport with different regional names.
+- "Colour" vs "Color" → MATCH. Same word, different spelling.
+- "The mitochondria" vs "Mitochondria" → MATCH. Same thing.
+- If in doubt whether two things are truly the same, lean toward NOT a match (pass: true).
+
+== RESPONSE FORMAT ==
+Respond ONLY with raw JSON. No markdown, no backticks, no explanation:
 {
-  "aiAnswer": "<your chosen answer>",
+  "aiAnswer": "<your single answer>",
   "judgements": {
     "<playerId>": {
       "pass": true or false,
-      "reason": "<short reason, 1 sentence>",
-      "corrected": "<corrected spelling if a typo was fixed, else null>",
+      "reason": "<one short sentence explaining why>",
+      "corrected": "<spelling-corrected version if you fixed a typo, else null>",
       "matchesAI": true or false
     }
   }
@@ -105,30 +125,26 @@ Respond ONLY with valid JSON, no markdown, no explanation outside the JSON:
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
-
-    // Strip markdown code fences if present
     const clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(clean);
 
-    return {
-      aiAnswer: parsed.aiAnswer || "???",
-      judgements: parsed.judgements || {},
-    };
+    const aiAnswer = parsed.aiAnswer || "???";
+    let judgements = parsed.judgements || {};
+
+    // Run local sanity check to catch obvious false match verdicts
+    judgements = sanityCheckJudgements(aiAnswer, playerAnswers, judgements);
+
+    return { aiAnswer, judgements };
   } catch (err) {
     console.error("Gemini judge error:", err.message);
-    // Fallback: pass everyone if AI fails
     const fallback = {};
     for (const id of Object.keys(playerAnswers)) {
-      fallback[id] = { pass: true, reason: "AI unavailable", corrected: null, matchesAI: false };
+      fallback[id] = { pass: true, reason: "AI unavailable — passed by default", corrected: null, matchesAI: false };
     }
     return { aiAnswer: "???", judgements: fallback };
   }
 }
 
-/**
- * Ask Gemini to judge a single "did player answer anything this round" scenario.
- * Used for the "no answer = eliminated" rule in round 2+.
- */
 async function isGibberish(answer, question, exampleAnswers) {
   if (!genAI) return false;
   const model = genAI.getGenerativeModel({ model: activeModel });
