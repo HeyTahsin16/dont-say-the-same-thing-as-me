@@ -116,7 +116,7 @@ const questions = [
     id: "q15",
     category: "10-20",
     question: "Name a country in southeast asia.",
-    exampleAnswers: ["China", "Taiwan", "Japan", "Malaysia", "Myanmar", "Indonesia", "Vietnam", "Thailand", "Singapore", "Philippines"],
+    exampleAnswers: ["Brunei", "Laos", "Singapore ", "Malaysia", "Myanmar", "Indonesia", "Vietnam", "Thailand", "Cambodia", "Philippines"],
     hint: "The countries in ASEAN organization."
   },
 
