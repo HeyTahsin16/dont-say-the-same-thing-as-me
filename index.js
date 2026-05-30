@@ -12,8 +12,8 @@ const {
 } = require("discord.js");
 
 const { initGemini, judgeRound, setModel, getModel, getAvailableModels } = require("./gemini");
-const { createGame, getGame, endGame, ROUND_DURATION_MS, RESULT_DURATION_MS } = require("./gameState");
-const { getQuestionByCategory, getOpeningCategory, getNextCategory } = require("./questions");
+const { createGame, getGame, endGame, ROUND_ONE_DURATION_MS, ROUND_DURATION_MS, RESULT_DURATION_MS } = require("./gameState");
+const { getQuestionByCategory, resolveCategory } = require("./questions");
 const { recordWin, getTopPlayers } = require("./leaderboard");
 
 // ─── ENV CHECKS ────────────────────────────────────────────────────────────────
@@ -88,18 +88,19 @@ const client = new Client({
 });
 
 // ─── EMBED HELPERS ─────────────────────────────────────────────────────────────
-function questionEmbed(game, question, roundNum) {
+function questionEmbed(game, question, roundNum, timerSecs) {
   const activePlayers = game.getActivePlayers();
+  const isFirstRound = roundNum === 1;
   return new EmbedBuilder()
     .setColor(Colors.Blue)
     .setTitle(`🎮 Round ${roundNum} — Category: **${question.category}** answers`)
     .setDescription(
       `**Question:** ${question.question}\n\n` +
-      `⏱️ **You have 60 seconds to type your answer in this channel!**\n` +
-      `Just send a message — no command needed.\n\n` +
+      `⏱️ **You have ${timerSecs} seconds to type your answer in this channel!**\n` +
+      (isFirstRound ? `Anyone who answers joins the game.\n\n` : `Just send a message — no command needed.\n\n`) +
       `👥 Players still in: **${activePlayers.map(p => p.username).join(", ") || "none"}**`
     )
-    .setFooter({ text: `Round ends in 60 seconds • ${activePlayers.length} player(s) active` })
+    .setFooter({ text: `Round ends in ${timerSecs}s • ${activePlayers.length} player(s) active` })
     .setTimestamp();
 }
 
@@ -168,7 +169,7 @@ function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
         : "**Nobody survived this round!**")
     )
     .addFields(fields.length ? fields : [{ name: "No answers recorded", value: "—" }])
-    .setFooter({ text: "Next round starts in 10 seconds…" })
+    .setFooter({ text: `Next round starts in 10 seconds • Round was ${game.round === 1 ? "60" : "20"}s` })
     .setTimestamp();
 }
 
@@ -217,21 +218,19 @@ async function startRound(game, channel) {
   game.eliminatedThisRound = [];
   game.survivorsThisRound = [];
 
-  // Pick question category
-  // Round 1: no players yet so always start with the widest category
-  if (game.round === 1) {
-    game.currentCategory = "40+";
-  } else {
-    game.currentCategory = getNextCategory(game.currentCategory);
-  }
+  // ── Dynamic category ────────────────────────────────────────────────────
+  // resolveCategory looks at active player count + how long we've been on the
+  // current difficulty, and decides whether to stay, step up, or step back.
+  const activeCount = game.getActivePlayers().length;
+  const category = resolveCategory(game, activeCount);
 
-  // Pick a question not used before
+  // Pick a question not used before in this category
   let question = null;
   let tries = 0;
   do {
-    question = getQuestionByCategory(game.currentCategory);
+    question = getQuestionByCategory(category);
     tries++;
-    if (tries > 20) break; // safety valve
+    if (tries > 20) break;
   } while (question && game.usedQuestionIds.has(question.id));
 
   if (!question) {
@@ -243,12 +242,15 @@ async function startRound(game, channel) {
   game.usedQuestionIds.add(question.id);
   game.currentQuestion = question;
 
-  await channel.send({ embeds: [questionEmbed(game, question, game.round)] });
+  // ── Round timer: 60s for round 1 (joining), 20s for all others ──────────
+  const roundDuration = game.round === 1 ? ROUND_ONE_DURATION_MS : ROUND_DURATION_MS;
+  const timerSecs = roundDuration / 1000;
 
-  // Round timer
+  await channel.send({ embeds: [questionEmbed(game, question, game.round, timerSecs)] });
+
   game.roundTimer = setTimeout(async () => {
     await resolveRound(game, channel);
-  }, ROUND_DURATION_MS);
+  }, roundDuration);
 }
 
 async function resolveRound(game, channel) {
