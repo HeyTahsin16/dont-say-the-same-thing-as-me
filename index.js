@@ -178,20 +178,23 @@ function drawEmbed() {
 
 // ─── GAME LOOP ─────────────────────────────────────────────────────────────────
 async function startRound(game, channel) {
-  const activePlayers = game.getActivePlayers();
+  // Round 1: no players yet (they join by answering), skip survivor checks
+  if (game.round > 0) {
+    const activePlayers = game.getActivePlayers();
 
-  if (activePlayers.length === 0) {
-    await channel.send({ embeds: [drawEmbed()] });
-    endGame(channel.id);
-    return;
-  }
+    if (activePlayers.length === 0) {
+      await channel.send({ embeds: [drawEmbed()] });
+      endGame(channel.id);
+      return;
+    }
 
-  if (activePlayers.length === 1) {
-    const winner = activePlayers[0];
-    recordWin(winner.id, winner.username);
-    await channel.send({ embeds: [winnerEmbed(winner)] });
-    endGame(channel.id);
-    return;
+    if (activePlayers.length === 1) {
+      const winner = activePlayers[0];
+      recordWin(winner.id, winner.username);
+      await channel.send({ embeds: [winnerEmbed(winner)] });
+      endGame(channel.id);
+      return;
+    }
   }
 
   game.round++;
@@ -201,8 +204,9 @@ async function startRound(game, channel) {
   game.survivorsThisRound = [];
 
   // Pick question category
+  // Round 1: no players yet so always start with the widest category
   if (game.round === 1) {
-    game.currentCategory = getOpeningCategory(activePlayers.length);
+    game.currentCategory = "40+";
   } else {
     game.currentCategory = getNextCategory(game.currentCategory);
   }
