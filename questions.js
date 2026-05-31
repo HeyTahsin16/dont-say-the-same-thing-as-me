@@ -95,7 +95,101 @@ const questions = [
   { id: "q67", category: "1-3", question: "Name a spatial axis on a standard 3D coordinate graph.", exampleAnswers: ["X", "Y", "Z"], hint: "The 3 dimensions of space." },
   { id: "q68", category: "1-3", question: "Name a primary law of thermodynamics.", exampleAnswers: ["First", "Second", "Third", "Zeroth"], hint: "The foundational laws governing heat and energy." },
   { id: "q69", category: "1-3", question: "Name an outcome of a coin flip.", exampleAnswers: ["Heads", "Tails"], hint: "50/50 chance." },
-  { id: "q70", category: "1-3", question: "Name a part of a standard URL protocol.", exampleAnswers: ["HTTP", "HTTPS", "FTP"], hint: "What goes before the '://'." }
+  { id: "q70", category: "1-3", question: "Name a part of a standard URL protocol.", exampleAnswers: ["HTTP", "HTTPS", "FTP"], hint: "What goes before the '://'." },
+
+  // ─────────────────────────────────────────────
+  // 40+ answers (Round 2 Wide Open)
+  // ─────────────────────────────────────────────
+  { id: "q71", category: "40+", question: "Name a recognized breed of dog.", exampleAnswers: ["Labrador Retriever", "Poodle", "German Shepherd", "Bulldog", "Beagle", "Golden Retriever", "Pug", "Chihuahua", "Dachshund", "Boxer"], hint: "There are hundreds of recognized breeds." },
+  { id: "q72", category: "40+", question: "Name a type of vegetable.", exampleAnswers: ["Carrot", "Broccoli", "Spinach", "Potato", "Tomato", "Onion", "Garlic", "Cucumber", "Pepper", "Zucchini"], hint: "Botanical or culinary vegetables count." },
+  { id: "q73", category: "40+", question: "Name a famous video game franchise.", exampleAnswers: ["Super Mario", "The Legend of Zelda", "Call of Duty", "Final Fantasy", "Pokémon", "Grand Theft Auto", "Halo", "Minecraft", "Sonic the Hedgehog", "Assassin's Creed"], hint: "Any gaming series with multiple entries." },
+  { id: "q74", category: "40+", question: "Name a famous historical painter or artist.", exampleAnswers: ["Leonardo da Vinci", "Vincent van Gogh", "Pablo Picasso", "Claude Monet", "Michelangelo", "Rembrandt", "Salvador Dalí", "Frida Kahlo", "Andy Warhol", "Georgia O'Keeffe"], hint: "People whose art hangs in major museums." },
+  { id: "q75", category: "40+", question: "Name an item typically found in a grocery store.", exampleAnswers: ["Milk", "Bread", "Eggs", "Cheese", "Apples", "Cereal", "Pasta", "Rice", "Chicken", "Toilet Paper"], hint: "Think about the aisles you walk down." },
+  { id: "q76", category: "40+", question: "Name a hand tool found in a standard toolbox.", exampleAnswers: ["Hammer", "Screwdriver", "Wrench", "Pliers", "Tape Measure", "Saw", "Chisel", "Mallet", "Allen Key", "Level"], hint: "Things you use to build or fix stuff." },
+  { id: "q77", category: "40+", question: "Name a recognized profession or job title.", exampleAnswers: ["Doctor", "Teacher", "Engineer", "Nurse", "Chef", "Lawyer", "Accountant", "Plumber", "Electrician", "Police Officer"], hint: "Ways people make a living." },
+  { id: "q78", category: "40+", question: "Name a species of insect.", exampleAnswers: ["Ant", "Honeybee", "Monarch Butterfly", "Mosquito", "Ladybug", "Grasshopper", "Cricket", "Dragonfly", "Wasp", "Beetle"], hint: "They usually have six legs and an exoskeleton." },
+  { id: "q79", category: "40+", question: "Name a model line of smartphone.", exampleAnswers: ["iPhone", "Galaxy S", "Pixel", "OnePlus", "Xperia", "Moto G", "ZenFone", "Lumia", "BlackBerry", "Razr"], hint: "The name brand or series of the device in your pocket." },
+  { id: "q80", category: "40+", question: "Name an official Olympic track and field event.", exampleAnswers: ["100m Dash", "Long Jump", "Shot Put", "Pole Vault", "Marathon", "High Jump", "Discus", "Javelin", "4x100m Relay", "Decathlon"], hint: "Events that happen inside the main athletic stadium." },
+  { id: "q81", category: "40+", question: "Name a recognized cryptocurrency.", exampleAnswers: ["Bitcoin", "Ethereum", "Dogecoin", "Litecoin", "Cardano", "Solana", "Polkadot", "Tether", "Ripple (XRP)", "Shiba Inu"], hint: "Digital coins traded on the blockchain." },
+  { id: "q82", category: "40+", question: "Name a past or present President of the United States.", exampleAnswers: ["George Washington", "Abraham Lincoln", "Thomas Jefferson", "John F. Kennedy", "Barack Obama", "Franklin D. Roosevelt", "Theodore Roosevelt", "Ronald Reagan", "Bill Clinton", "Joe Biden"], hint: "There have been 46 presidencies." },
+  { id: "q83", category: "40+", question: "Name a known chemical compound.", exampleAnswers: ["Water (H2O)", "Carbon Dioxide (CO2)", "Sodium Chloride (NaCl)", "Ammonia (NH3)", "Methane (CH4)", "Glucose (C6H12O6)", "Sulfuric Acid", "Ethanol", "Baking Soda", "Hydrogen Peroxide"], hint: "Molecules made of two or more elements." },
+  { id: "q84", category: "40+", question: "Name a piece of household furniture.", exampleAnswers: ["Sofa", "Bed", "Dining Table", "Chair", "Bookshelf", "Dresser", "Nightstand", "Desk", "Coffee Table", "Wardrobe"], hint: "Movable objects that make a room livable." },
+  { id: "q85", category: "40+", question: "Name a recognized university in the USA.", exampleAnswers: ["Harvard", "Stanford", "MIT", "UCLA", "Yale", "Princeton", "Columbia", "NYU", "University of Texas", "University of Michigan"], hint: "There are thousands to choose from." },
+  { id: "q86", category: "40+", question: "Name a species of fish.", exampleAnswers: ["Salmon", "Tuna", "Clownfish", "Great White Shark", "Trout", "Goldfish", "Catfish", "Cod", "Mahi-Mahi", "Bass"], hint: "Aquatic, gill-bearing animals." },
+
+  // ─────────────────────────────────────────────
+  // 20-40 answers (Slightly narrower)
+  // ─────────────────────────────────────────────
+  { id: "q87", category: "20-40", question: "Name a team currently in the NFL.", exampleAnswers: ["Chiefs", "Eagles", "Cowboys", "Patriots", "49ers", "Packers", "Steelers", "Ravens", "Bills", "Seahawks"], hint: "There are 32 franchises." },
+  { id: "q88", category: "20-40", question: "Name a team currently in the NBA.", exampleAnswers: ["Lakers", "Celtics", "Warriors", "Bulls", "Heat", "Knicks", "Spurs", "Nuggets", "Suns", "Mavericks"], hint: "There are 30 franchises." },
+  { id: "q89", category: "20-40", question: "Name a letter in the Greek alphabet.", exampleAnswers: ["Alpha", "Beta", "Gamma", "Delta", "Omega", "Sigma", "Pi", "Epsilon", "Theta", "Kappa"], hint: "There are 24 letters total." },
+  { id: "q90", category: "20-40", question: "Name an amendment to the US Constitution.", exampleAnswers: ["First", "Second", "Tenth", "Thirteenth", "Eighteenth", "Nineteenth", "Twenty-First", "Twenty-Fifth"], hint: "There are 27 of these." },
+  { id: "q91", category: "20-40", question: "Name a property on a standard US Monopoly board.", exampleAnswers: ["Boardwalk", "Park Place", "Reading Railroad", "Illinois Avenue", "Marvin Gardens", "Baltic Avenue", "St. Charles Place"], hint: "There are 28 unowned properties you can buy." },
+  { id: "q92", category: "20-40", question: "Name a book of the New Testament.", exampleAnswers: ["Matthew", "Mark", "Luke", "John", "Acts", "Romans", "Revelation", "Corinthians"], hint: "There are 27 books total." },
+  { id: "q93", category: "20-40", question: "Name a playable character in Super Smash Bros. Melee.", exampleAnswers: ["Mario", "Fox", "Falco", "Marth", "Captain Falcon", "Peach", "Jigglypuff", "Zelda", "Sheik", "Mewtwo"], hint: "There are 26 playable fighters in this GameCube classic." },
+  { id: "q94", category: "20-40", question: "Name a standard time zone abbreviation.", exampleAnswers: ["EST", "PST", "CST", "MST", "GMT", "UTC", "CET", "JST", "AEST", "BST"], hint: "The 3 or 4 letter codes used to denote regional time." },
+  { id: "q95", category: "20-40", question: "Name a movie in the Marvel Cinematic Universe (MCU).", exampleAnswers: ["Iron Man", "The Avengers", "Black Panther", "Endgame", "Guardians of the Galaxy", "Thor: Ragnarok", "Spider-Man: No Way Home"], hint: "There are over 30 films in the interconnected universe." },
+  { id: "q96", category: "20-40", question: "Name a bone in the human skull or face.", exampleAnswers: ["Mandible", "Maxilla", "Frontal", "Parietal", "Zygomatic", "Occipital", "Temporal", "Sphenoid"], hint: "There are 22 bones that make up the head." },
+  { id: "q97", category: "20-40", question: "Name a day of the month.", exampleAnswers: ["1st", "15th", "31st", "10th", "22nd", "3rd", "28th"], hint: "Numbers 1 through 31." },
+  { id: "q98", category: "20-40", question: "Name a member country of NATO.", exampleAnswers: ["USA", "UK", "France", "Germany", "Turkey", "Canada", "Italy", "Poland", "Finland", "Sweden"], hint: "There are 32 member states in the alliance." },
+
+  // ─────────────────────────────────────────────
+  // 10-20 answers (The squeeze begins)
+  // ─────────────────────────────────────────────
+  { id: "q99", category: "10-20", question: "Name an animal from the Chinese Zodiac.", exampleAnswers: ["Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake", "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"], hint: "There are 12 signs in the cycle." },
+  { id: "q100", category: "10-20", question: "Name a rank in a standard deck of cards.", exampleAnswers: ["Ace", "King", "Queen", "Jack", "Ten", "Two", "Seven"], hint: "There are 13 possible ranks." },
+  { id: "q101", category: "10-20", question: "Name a numbered wedge on a standard dartboard.", exampleAnswers: ["1", "20", "19", "15", "Bullseye", "Outer Bull"], hint: "Numbers 1-20 plus the center." },
+  { id: "q102", category: "10-20", question: "Name a Cabinet department in the US Government.", exampleAnswers: ["State", "Defense", "Treasury", "Justice", "Education", "Energy", "Homeland Security", "Agriculture"], hint: "There are 15 executive departments." },
+  { id: "q103", category: "10-20", question: "Name a unique musical note in the Western chromatic scale.", exampleAnswers: ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"], hint: "There are 12 notes before the octave repeats." },
+  { id: "q104", category: "10-20", question: "Name a zodiac constellation on the ecliptic.", exampleAnswers: ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Ophiuchus"], hint: "There are 12 traditional ones (and 13 recognized by astronomy)." },
+  { id: "q105", category: "10-20", question: "Name an English word for a multiple of 10, up to 100.", exampleAnswers: ["Ten", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety", "Hundred"], hint: "There are exactly 10 words." },
+  { id: "q106", category: "10-20", question: "Name a club currently in the English Premier League.", exampleAnswers: ["Arsenal", "Manchester City", "Liverpool", "Chelsea", "Manchester United", "Tottenham Hotspur", "Aston Villa", "Newcastle United"], hint: "There are 20 teams competing in the top flight." },
+  { id: "q107", category: "10-20", question: "Name a cranial nerve in humans.", exampleAnswers: ["Olfactory", "Optic", "Oculomotor", "Trochlear", "Trigeminal", "Abducens", "Facial", "Vagus"], hint: "There are 12 pairs of these." },
+  { id: "q108", category: "10-20", question: "Name a Canadian Province or Territory.", exampleAnswers: ["Ontario", "Quebec", "British Columbia", "Alberta", "Nunavut", "Nova Scotia", "Manitoba"], hint: "There are 13 total (10 provinces, 3 territories)." },
+
+  // ─────────────────────────────────────────────
+  // 5-10 answers (Getting highly specific)
+  // ─────────────────────────────────────────────
+  { id: "q109", category: "5-10", question: "Name a noble rank in the British peerage.", exampleAnswers: ["Duke", "Marquess", "Earl", "Viscount", "Baron"], hint: "There are 5 ranks of the peerage." },
+  { id: "q110", category: "5-10", question: "Name a standard color found in a normal bag of M&Ms.", exampleAnswers: ["Red", "Orange", "Yellow", "Green", "Blue", "Brown"], hint: "There are 6 standard colors." },
+  { id: "q111", category: "5-10", question: "Name a main novel in the Harry Potter series.", exampleAnswers: ["Sorcerer's Stone", "Chamber of Secrets", "Prisoner of Azkaban", "Goblet of Fire", "Order of the Phoenix", "Half-Blood Prince", "Deathly Hallows"], hint: "There are 7 books." },
+  { id: "q112", category: "5-10", question: "Name a day of the week.", exampleAnswers: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], hint: "There are 7 days." },
+  { id: "q113", category: "5-10", question: "Name one of the Seven Wonders of the Ancient World.", exampleAnswers: ["Great Pyramid of Giza", "Hanging Gardens of Babylon", "Colossus of Rhodes", "Lighthouse of Alexandria", "Temple of Artemis"], hint: "There are exactly 7." },
+  { id: "q114", category: "5-10", question: "Name a vowel in the English alphabet.", exampleAnswers: ["A", "E", "I", "O", "U", "Y"], hint: "5 core ones, plus 'sometimes Y'." },
+  { id: "q115", category: "5-10", question: "Name a main 'Episode' movie in the Star Wars Skywalker Saga.", exampleAnswers: ["The Phantom Menace", "Attack of the Clones", "Revenge of the Sith", "A New Hope", "The Empire Strikes Back", "Return of the Jedi"], hint: "There are 9 episodic films." },
+  { id: "q116", category: "5-10", question: "Name a standard position on a basketball court.", exampleAnswers: ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"], hint: "There are 5 positions." },
+  { id: "q117", category: "5-10", question: "Name a standard US coin denomination currently minted.", exampleAnswers: ["Penny", "Nickel", "Dime", "Quarter", "Half Dollar", "Dollar Coin"], hint: "There are 6 coins." },
+  { id: "q118", category: "5-10", question: "Name a string tuning on a standard guitar.", exampleAnswers: ["E", "A", "D", "G", "B"], hint: "There are 6 strings, but 5 unique notes." },
+  { id: "q119", category: "5-10", question: "Name a shape of a piece (Tetromino) in Tetris.", exampleAnswers: ["I", "O", "T", "S", "Z", "J", "L"], hint: "There are 7 unique blocks." },
+  { id: "q120", category: "5-10", question: "Name an actor who has officially played James Bond in EON productions.", exampleAnswers: ["Sean Connery", "George Lazenby", "Roger Moore", "Timothy Dalton", "Pierce Brosnan", "Daniel Craig"], hint: "There are 6 official actors." },
+
+  // ─────────────────────────────────────────────
+  // 1-5 answers (Finals territory)
+  // ─────────────────────────────────────────────
+  { id: "q121", category: "1-5", question: "Name a season of the year.", exampleAnswers: ["Spring", "Summer", "Autumn (Fall)", "Winter"], hint: "There are 4 seasons." },
+  { id: "q122", category: "1-5", question: "Name a nucleotide base found in RNA.", exampleAnswers: ["Adenine", "Uracil", "Cytosine", "Guanine"], hint: "There are 4 letters (one is different from DNA)." },
+  { id: "q123", category: "1-5", question: "Name a ghost from the original Pac-Man arcade game.", exampleAnswers: ["Blinky", "Pinky", "Inky", "Clyde"], hint: "There are 4 ghosts." },
+  { id: "q124", category: "1-5", question: "Name a primary taste sensation.", exampleAnswers: ["Sweet", "Sour", "Salty", "Bitter", "Umami"], hint: "There are 5 basic tastes recognized by science." },
+  { id: "q125", category: "1-5", question: "Name a major US broadcast television network.", exampleAnswers: ["ABC", "CBS", "NBC", "Fox", "The CW"], hint: "There are 5 main over-the-air networks." },
+  { id: "q126", category: "1-5", question: "Name a house at Hogwarts School of Witchcraft and Wizardry.", exampleAnswers: ["Gryffindor", "Slytherin", "Ravenclaw", "Hufflepuff"], hint: "There are 4 houses." },
+  { id: "q127", category: "1-5", question: "Name a Grand Slam tennis tournament.", exampleAnswers: ["Australian Open", "French Open", "Wimbledon", "US Open"], hint: "There are 4 majors." },
+  { id: "q128", category: "1-5", question: "Name one of the Teenage Mutant Ninja Turtles.", exampleAnswers: ["Leonardo", "Michelangelo", "Donatello", "Raphael"], hint: "There are 4 brothers." },
+  { id: "q129", category: "1-5", question: "Name an official member of The Beatles.", exampleAnswers: ["John Lennon", "Paul McCartney", "George Harrison", "Ringo Starr"], hint: "The Fab Four." },
+  { id: "q130", category: "1-5", question: "Name a canonical Gospel in the New Testament.", exampleAnswers: ["Matthew", "Mark", "Luke", "John"], hint: "There are 4 gospels." },
+
+  // ─────────────────────────────────────────────
+  // 1-3 answers (Absolute sudden death)
+  // ─────────────────────────────────────────────
+  { id: "q131", category: "1-3", question: "Name a color on a standard traffic light.", exampleAnswers: ["Red", "Yellow", "Green"], hint: "There are 3 lights." },
+  { id: "q132", category: "1-3", question: "Name a primary color of pigment (CMY model).", exampleAnswers: ["Cyan", "Magenta", "Yellow"], hint: "Used in printer ink, there are 3." },
+  { id: "q133", category: "1-3", question: "Name a hand on a standard analog clock.", exampleAnswers: ["Hour", "Minute", "Second"], hint: "There are 3 standard hands." },
+  { id: "q134", category: "1-3", question: "Name a metal used for a standard Olympic medal.", exampleAnswers: ["Gold", "Silver", "Bronze"], hint: "There are 3 medals awarded." },
+  { id: "q135", category: "1-3", question: "Name a primary type of blood vessel.", exampleAnswers: ["Artery", "Vein", "Capillary"], hint: "There are 3 main types." },
+  { id: "q136", category: "1-3", question: "Name a boolean value in standard computer programming.", exampleAnswers: ["True", "False"], hint: "There are only 2 states." },
+  { id: "q137", category: "1-3", question: "Name a major political party in the United States.", exampleAnswers: ["Democratic", "Republican"], hint: "There are 2 main ones in the two-party system." },
+  { id: "q138", category: "1-3", question: "Name a particle found inside the nucleus of an atom.", exampleAnswers: ["Proton", "Neutron"], hint: "There are 2 main nucleons (ignoring quarks)." },
+  { id: "q139", category: "1-3", question: "Name a sex chromosome in humans.", exampleAnswers: ["X", "Y"], hint: "There are 2." },
+  { id: "q140", category: "1-3", question: "Name a state of a standard light switch.", exampleAnswers: ["On", "Off"], hint: "There are 2 binary states." }
 ];
 
 // Pick a random question from a specific category
