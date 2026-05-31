@@ -92,7 +92,7 @@ async function judgeRound({ question, exampleAnswers, playerAnswers }) {
 ${playerSection || "  (no players answered)"}
 
 == JOB 1 — YOUR ANSWER ==
-Pick the single most common, obvious, gut-reaction answer. The one most people say first.
+Pick the single most common, obvious, gut-reaction answer. But try becoming more unpredictable by shuffling between 5 most obvious answers if there are more than 5 answers ofcourse.
 - "name a color" → "Red"
 - "name a sport" → "Football"
 - "name a planet" → "Earth"
