@@ -64,7 +64,7 @@ function answersMatch(a, b) {
 }
 
 // ─── JUDGE ROUND ───────────────────────────────────────────────────────────────
-async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiAnswers = [] }) {
+async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiAnswers = [], category = "" }) {
   if (!genAI) throw new Error("Gemini not initialized");
 
   const model = genAI.getGenerativeModel({ model: activeModel });
@@ -73,8 +73,10 @@ async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiA
     .map(([id, ans]) => `  - Player "${id}": "${ans}"`)
     .join("\n");
 
+  // If previousAiAnswers is empty (either none yet, or exhaustion detected by aiHistory),
+  // don't show an avoid section at all — let AI pick freely.
   const avoidSection = previousAiAnswers.length > 0
-    ? `\n== ANSWERS YOU ALREADY USED FOR THIS QUESTION (do NOT repeat these) ==\n[${previousAiAnswers.join(", ")}]\nPick the next most obvious/common answer that is not in this list.\n`
+    ? `\n== ANSWERS YOU HAVE ALREADY USED FOR THIS QUESTION — DO NOT REPEAT THESE ==\n[${previousAiAnswers.join(", ")}]\nThis question belongs to the "${category}" category, meaning it has roughly ${{"40+":40,"20-40":30,"10-20":15,"5-10":7,"1-5":3,"1-3":2}[category]??10} possible valid answers. You have used ${previousAiAnswers.length} so far — there are still plenty of fresh ones. Pick the next most well-known answer that is NOT in the list above.\n`
     : "";
 
   const prompt = `You are the AI host of "Don't Say The Same Thing As Me" — a Discord game inspired by bradyyourtutor on YouTube.
@@ -86,7 +88,7 @@ async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiA
 == QUESTION ==
 "${question}"
 
-== EXAMPLE VALID ANSWERS (scope reference) ==
+== EXAMPLE VALID ANSWERS (scope/style reference only — many more exist) ==
 [${exampleAnswers.join(", ")}]
 ${avoidSection}
 == PLAYER ANSWERS ==
@@ -94,10 +96,10 @@ ${playerSection || "  (no players answered)"}
 
 == RULE 1 — PICKING YOUR ANSWER ==
 - Choose the ONE answer most people would blurt out first without thinking
-- Example: "name a color" → "Red", then next time "Blue", then "Green"
-- Example: "name a sport" → "Football", then next time "Cricket", then "Basketball"
+- Work through answers from most to least obvious over time: "name a color" → Red, then Blue, then Green, then Yellow etc.
 - Give EXACTLY one word or short phrase. No slashes, no "or", no alternatives.
-- If the most obvious answer is in your "already used" list above, pick the next most recognizable one.
+- If the most obvious answer is in your already-used list above, pick the NEXT most recognizable one that is not listed.
+- Never make up answers — only pick real, correct answers to the question.
 
 == RULE 2 — JUDGING: IS THE ANSWER VALID? ==
 For each player, decide ONLY: is their answer a real, correct answer to this question?
