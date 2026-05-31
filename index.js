@@ -114,13 +114,17 @@ function questionEmbed(game, question, roundNum, timerSecs) {
     .setFooter({ text: `Round ends in ${timerSecs}s • ${activePlayers.length} player(s) active` })
     .setTimestamp();
 
+  // No skip button in round 1 — players haven't joined yet
+  if (isFirstRound) {
+    return { embeds: [embed], components: [] };
+  }
+
   const skipButton = new ButtonBuilder()
     .setCustomId("skip_question")
     .setLabel("⏭️ Skip Question")
     .setStyle(ButtonStyle.Secondary);
 
   const row = new ActionRowBuilder().addComponents(skipButton);
-
   return { embeds: [embed], components: [row] };
 }
 
@@ -579,9 +583,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const userId = interaction.user.id;
   const activePlayers = game.getActivePlayers();
 
-  // Only active players can vote to skip (round 1: anyone in the channel)
-  if (game.round > 1 && !game.players.has(userId)) {
-    return interaction.reply({ content: "Only players still in the game can vote to skip.", ephemeral: true });
+  // Must be an active player — eliminated players and non-participants cannot vote
+  const isActivePlayer = activePlayers.some(p => p.id === userId);
+  if (!isActivePlayer) {
+    return interaction.reply({
+      content: "❌ Only active players still in the game can vote to skip.",
+      ephemeral: true,
+    });
+  }
+
+  // Only one skip allowed per round
+  if (game.skipUsedRounds.has(game.round)) {
+    return interaction.reply({
+      content: "❌ Skip already used this round — only one skip per round is allowed.",
+      ephemeral: true,
+    });
   }
 
   if (game.skipVotes.has(userId)) {
@@ -590,8 +606,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   game.skipVotes.add(userId);
 
-  const totalVoters = game.round === 1 ? Math.max(activePlayers.length, 1) : activePlayers.length;
-  const needed = Math.ceil(totalVoters / 2); // majority = more than half
+  const needed = Math.ceil(activePlayers.length / 2);
   const current = game.skipVotes.size;
   const remaining = needed - current;
 
@@ -600,6 +615,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   });
 
   if (current >= needed) {
+    game.skipUsedRounds.add(game.round);
     await skipRound(game, interaction.channel);
   }
 });
