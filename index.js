@@ -415,14 +415,15 @@ async function resolveRound(game, channel) {
 
   if (Object.keys(playerAnswers).length > 0) {
     try {
-      // Pull persistent AI answer history for this question so it varies across sessions
-      const previousAiAnswers = getPreviousAnswers(question.id);
+      // Pull persistent AI answer history — passes category so exhaustion detection works
+      const previousAiAnswers = getPreviousAnswers(question.id, question.category);
 
       const result = await judgeRound({
         question: question.question,
         exampleAnswers: question.exampleAnswers,
         playerAnswers,
         previousAiAnswers,
+        category: question.category,
       });
       aiAnswer = result.aiAnswer;
       judgements = result.judgements;
