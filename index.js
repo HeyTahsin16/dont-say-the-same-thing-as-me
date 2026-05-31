@@ -8,6 +8,9 @@ const {
   Routes,
   SlashCommandBuilder,
   EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   Colors,
 } = require("discord.js");
 
@@ -99,7 +102,7 @@ const client = new Client({
 function questionEmbed(game, question, roundNum, timerSecs) {
   const activePlayers = game.getActivePlayers();
   const isFirstRound = roundNum === 1;
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor(Colors.Blue)
     .setTitle(`🎮 Round ${roundNum} — Category: **${question.category}** answers`)
     .setDescription(
@@ -110,6 +113,15 @@ function questionEmbed(game, question, roundNum, timerSecs) {
     )
     .setFooter({ text: `Round ends in ${timerSecs}s • ${activePlayers.length} player(s) active` })
     .setTimestamp();
+
+  const skipButton = new ButtonBuilder()
+    .setCustomId("skip_question")
+    .setLabel("⏭️ Skip Question")
+    .setStyle(ButtonStyle.Secondary);
+
+  const row = new ActionRowBuilder().addComponents(skipButton);
+
+  return { embeds: [embed], components: [row] };
 }
 
 function sanitize(str, fallback = "—") {
@@ -255,16 +267,89 @@ async function startRound(game, channel) {
 
   game.usedQuestionIds.add(question.id);
   game.currentQuestion = question;
+  game.skipVotes.clear();
 
-  // ── Round timer: 60s for round 1 (joining), 20s for all others ──────────
+  // ── Round timer: 60s for round 1 (joining), 30s for all others ──────────
   const roundDuration = game.round === 1 ? ROUND_ONE_DURATION_MS : ROUND_DURATION_MS;
   const timerSecs = roundDuration / 1000;
 
-  await channel.send({ embeds: [questionEmbed(game, question, game.round, timerSecs)] });
+  game.questionMessage = await channel.send(questionEmbed(game, question, game.round, timerSecs));
 
   game.roundTimer = setTimeout(async () => {
     await resolveRound(game, channel);
   }, roundDuration);
+}
+
+// Disable the skip button on the question message so it can't be clicked after round ends
+async function disableSkipButton(game) {
+  try {
+    if (game.questionMessage) {
+      const disabledButton = new ButtonBuilder()
+        .setCustomId("skip_question")
+        .setLabel("⏭️ Skip Question")
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(true);
+      const row = new ActionRowBuilder().addComponents(disabledButton);
+      await game.questionMessage.edit({ components: [row] });
+    }
+  } catch { /* message may have been deleted — ignore */ }
+}
+
+// Skip the current question — pick a new one without judging
+async function skipRound(game, channel) {
+  if (game.phase !== "answering") return;
+  game.phase = "judging"; // block further input
+
+  clearTimeout(game.roundTimer);
+  await disableSkipButton(game);
+
+  const activePlayers = game.getActivePlayers();
+
+  // Pick a replacement question from the same category (not used before)
+  let newQuestion = null;
+  let tries = 0;
+  do {
+    newQuestion = getQuestionByCategory(game.currentCategory);
+    tries++;
+    if (tries > 20) break;
+  } while (newQuestion && game.usedQuestionIds.has(newQuestion.id));
+
+  if (!newQuestion) {
+    await channel.send("⚠️ No replacement question available — ending round normally.");
+    await resolveRound(game, channel);
+    return;
+  }
+
+  game.usedQuestionIds.add(newQuestion.id);
+  game.currentQuestion = newQuestion;
+  game.skipVotes.clear();
+  game.roundAnswers.clear();
+
+  const skipCount = activePlayers.length; // everyone effectively voted
+  await channel.send({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(Colors.Orange)
+        .setTitle("⏭️ Question Skipped!")
+        .setDescription(`Majority voted to skip. Here's a new question!`)
+        .setTimestamp(),
+    ],
+  });
+
+  // Small pause then send new question
+  setTimeout(async () => {
+    game.phase = "answering";
+    game.skipVotes.clear();
+
+    const roundDuration = game.round === 1 ? ROUND_ONE_DURATION_MS : ROUND_DURATION_MS;
+    const timerSecs = roundDuration / 1000;
+
+    game.questionMessage = await channel.send(questionEmbed(game, newQuestion, game.round, timerSecs));
+
+    game.roundTimer = setTimeout(async () => {
+      await resolveRound(game, channel);
+    }, roundDuration);
+  }, 2000);
 }
 
 async function resolveRound(game, channel) {
@@ -272,6 +357,7 @@ async function resolveRound(game, channel) {
   game.phase = "judging";
 
   clearTimeout(game.roundTimer);
+  await disableSkipButton(game);
 
   const question = game.currentQuestion;
   const activeBefore = game.getActivePlayers();
@@ -477,6 +563,44 @@ client.on(Events.MessageCreate, async (message) => {
         await resolveRound(game, message.channel);
       }
     }
+  }
+});
+
+// ─── BUTTON HANDLER (skip votes) ───────────────────────────────────────────────
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isButton()) return;
+  if (interaction.customId !== "skip_question") return;
+
+  const game = getGame(interaction.channelId);
+  if (!game || game.phase !== "answering") {
+    return interaction.reply({ content: "No active round to skip.", ephemeral: true });
+  }
+
+  const userId = interaction.user.id;
+  const activePlayers = game.getActivePlayers();
+
+  // Only active players can vote to skip (round 1: anyone in the channel)
+  if (game.round > 1 && !game.players.has(userId)) {
+    return interaction.reply({ content: "Only players still in the game can vote to skip.", ephemeral: true });
+  }
+
+  if (game.skipVotes.has(userId)) {
+    return interaction.reply({ content: "You already voted to skip!", ephemeral: true });
+  }
+
+  game.skipVotes.add(userId);
+
+  const totalVoters = game.round === 1 ? Math.max(activePlayers.length, 1) : activePlayers.length;
+  const needed = Math.ceil(totalVoters / 2); // majority = more than half
+  const current = game.skipVotes.size;
+  const remaining = needed - current;
+
+  await interaction.reply({
+    content: `⏭️ **${interaction.user.username}** voted to skip! (${current}/${needed} needed${remaining > 0 ? ` — ${remaining} more` : ""})`,
+  });
+
+  if (current >= needed) {
+    await skipRound(game, interaction.channel);
   }
 });
 
