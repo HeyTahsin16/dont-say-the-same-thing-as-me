@@ -33,7 +33,15 @@ initGemini(GEMINI_KEY);
 const commands = [
   new SlashCommandBuilder()
     .setName("startgame")
-    .setDescription("Start a new round of the word minigame in this channel."),
+    .setDescription("Start a new round of the word minigame in this channel.")
+    .addIntegerOption(opt =>
+      opt
+        .setName("players")
+        .setDescription("Expected number of players — round 1 ends early once everyone answers (optional)")
+        .setMinValue(2)
+        .setMaxValue(100)
+        .setRequired(false)
+    ),
 
   new SlashCommandBuilder()
     .setName("endgame")
@@ -169,7 +177,7 @@ function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
         : "**Nobody survived this round!**")
     )
     .addFields(fields.length ? fields : [{ name: "No answers recorded", value: "—" }])
-    .setFooter({ text: `Next round starts in 10 seconds • Round was ${game.round === 1 ? "60" : "20"}s` })
+    .setFooter({ text: `Next round starts in 10 seconds • Round was ${game.round === 1 ? "60" : "30"}s` })
     .setTimestamp();
 }
 
@@ -440,6 +448,26 @@ client.on(Events.MessageCreate, async (message) => {
     try {
       await message.react("📝");
     } catch { /* ignore react errors */ }
+
+    // ── Early round skip ────────────────────────────────────────────────────
+    // Round 1: skip if expectedPlayers is set and that many have now answered
+    // Round 2+: skip as soon as ALL active players have answered
+    const answered = game.roundAnswers.size;
+
+    if (game.round === 1 && game.expectedPlayers !== null) {
+      if (answered >= game.expectedPlayers) {
+        clearTimeout(game.roundTimer);
+        await message.channel.send(`⚡ All **${game.expectedPlayers}** players answered — starting early!`);
+        await resolveRound(game, message.channel);
+      }
+    } else if (game.round > 1) {
+      const activePlayers = game.getActivePlayers();
+      if (answered >= activePlayers.length) {
+        clearTimeout(game.roundTimer);
+        await message.channel.send(`⚡ Everyone answered — moving on!`);
+        await resolveRound(game, message.channel);
+      }
+    }
   }
 });
 
@@ -460,6 +488,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     const game = createGame(channelId, interaction.guildId, user.id);
+    const expectedPlayers = interaction.options.getInteger("players") ?? null;
+    game.expectedPlayers = expectedPlayers;
+
+    const playerNote = expectedPlayers
+      ? `⚡ Game set for **${expectedPlayers} players** — round 1 ends as soon as all ${expectedPlayers} answer!\n\n`
+      : "";
 
     await interaction.reply({
       embeds: [
@@ -477,6 +511,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             "• If you **don't answer** (round 2+) → **eliminated** 🚫\n" +
             "• Anyone who types in round 1 joins — last one standing wins! 🏆\n\n" +
             "⚠️ **The AI picks the most common answer — don't go with your first instinct!**\n\n" +
+            playerNote +
             "The first question launches in **5 seconds…**"
           )
           .setFooter({ text: "Type your answer when the question appears!" }),
