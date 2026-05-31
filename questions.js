@@ -199,6 +199,11 @@ const questions = [
   { id: "q191", category: "1-3", question: "Name a direction a standard door hinge opens.", exampleAnswers: ["Inward", "Outward"], hint: "Push or pull — 2 options." },
   { id: "q192", category: "1-3", question: "Name a possible result of a standard chess game.", exampleAnswers: ["Win", "Loss", "Draw"], hint: "There are 3 outcomes." },
   { id: "q193", category: "1-3", question: "Name a direction you can scroll with a mouse wheel.", exampleAnswers: ["Up", "Down"], hint: "2 standard directions." },
+
+  
+  { id: "q194", category: "20-40", question: "Name something you find in a bathroom.", exampleAnswers: ["Toothbrush", "Soap", "Towel", "Mirror", "Toilet", "Shampoo", "Razor", "Toilet paper", "Sink", "Bathtub"], hint: "Think about your daily bathroom routine." },
+  { id: "q195", category: "20-40", question: "Name a sport played with a ball.", exampleAnswers: ["Football", "Basketball", "Soccer", "Tennis", "Baseball", "Volleyball", "Golf", "Rugby", "Cricket", "Bowling"], hint: "Could be indoor or outdoor sports." },
+  { id: "q196", category: "20-40", question: "Name something people do in the morning.", exampleAnswers: ["Brush teeth", "Shower", "Eat breakfast", "Drink coffee", "Check phone", "Exercise", "Get dressed", "Make bed", "Read news", "Walk the dog"], hint: "Think about your morning routine." }
 ];
 
 // Pick a random question from a specific category
