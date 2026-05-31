@@ -515,16 +515,18 @@ client.on(Events.MessageCreate, async (message) => {
     game.addPlayer(userId, username);
   }
 
-  // Only active players can answer
+  // Only active (non-eliminated) players can answer, and only while the round is open
   const player = game.players.get(userId);
   if (!player || !player.active) return;
 
   // Record answer (first answer wins, duplicates are flagged)
   if (!game.roundAnswers.has(userId)) {
-    // Check if another active player already submitted the same answer (case-insensitive)
+    // Check if another ACTIVE player already submitted the same answer (case-insensitive)
     const normalised = content.trim().toLowerCase();
+    const activePids = new Set(game.getActivePlayers().map(p => p.id));
     const duplicate = [...game.roundAnswers.entries()].find(([otherId, otherAns]) => {
       if (otherId === userId) return false;
+      if (!activePids.has(otherId)) return false; // ignore eliminated players' old answers
       return otherAns.trim().toLowerCase() === normalised;
     });
 
