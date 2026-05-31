@@ -30,8 +30,8 @@ class GameState {
     this.resultTimer = null;
 
     this.usedQuestionIds = new Set();
-    this.skipVotes       = new Set(); // userIds who voted to skip this round
-    this.skipUsedRounds  = new Set(); // round numbers where a skip already happened
+    this.skipVotes       = new Set();
+    this.skipUsedRounds  = new Set();
 
     // ── Player cap (optional) ────────────────────────────────────────────────
     // If set via /startgame players: option, round 1 ends early once this
