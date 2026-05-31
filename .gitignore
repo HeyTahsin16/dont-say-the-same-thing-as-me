@@ -4,9 +4,10 @@ node_modules/
 # Environment secrets — never commit these
 .env
 
-# Leaderboard data — persisted on Railway volume, not in git
+# Persistent bot data — lives on Railway volume, not in git
 data/
 leaderboard.json
+ai_history.json
 
 # OS junk
 .DS_Store
