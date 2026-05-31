@@ -189,7 +189,91 @@ const questions = [
   { id: "q137", category: "1-3", question: "Name a major political party in the United States.", exampleAnswers: ["Democratic", "Republican"], hint: "There are 2 main ones in the two-party system." },
   { id: "q138", category: "1-3", question: "Name a particle found inside the nucleus of an atom.", exampleAnswers: ["Proton", "Neutron"], hint: "There are 2 main nucleons (ignoring quarks)." },
   { id: "q139", category: "1-3", question: "Name a sex chromosome in humans.", exampleAnswers: ["X", "Y"], hint: "There are 2." },
-  { id: "q140", category: "1-3", question: "Name a state of a standard light switch.", exampleAnswers: ["On", "Off"], hint: "There are 2 binary states." }
+  { id: "q140", category: "1-3", question: "Name a state of a standard light switch.", exampleAnswers: ["On", "Off"], hint: "There are 2 binary states." },
+
+  // ─────────────────────────────────────────────
+  // 40+ answers (Round 3 - Wide Open)
+  // ─────────────────────────────────────────────
+  { id: "q141", category: "40+", question: "Name a recognized world currency.", exampleAnswers: ["US Dollar", "Euro", "Yen", "Pound Sterling", "Rupee", "Peso", "Franc", "Dinar", "Yuan", "Ruble"], hint: "Money used to buy things internationally." },
+  { id: "q142", category: "40+", question: "Name a muscle in the human body.", exampleAnswers: ["Bicep", "Tricep", "Gluteus Maximus", "Deltoid", "Hamstring", "Quadricep", "Pectoral", "Latissimus Dorsi", "Gastrocnemius", "Abdominals"], hint: "The things you flex at the gym." },
+  { id: "q143", category: "40+", question: "Name a commonly used spice or herb.", exampleAnswers: ["Pepper", "Cinnamon", "Basil", "Oregano", "Cumin", "Paprika", "Thyme", "Rosemary", "Nutmeg", "Coriander"], hint: "Stuff you add to food for flavor." },
+  { id: "q144", category: "40+", question: "Name a species of reptile.", exampleAnswers: ["Snake", "Turtle", "Crocodile", "Alligator", "Lizard", "Chameleon", "Iguana", "Gecko", "Komodo Dragon", "Tortoise"], hint: "Cold-blooded, scaly animals." },
+  { id: "q145", category: "40+", question: "Name a globally recognized fast-food chain.", exampleAnswers: ["McDonald's", "Burger King", "KFC", "Subway", "Wendy's", "Taco Bell", "Domino's", "Pizza Hut", "Starbucks", "Popeyes"], hint: "Places with drive-thrus and quick meals." },
+  { id: "q146", category: "40+", question: "Name a popular card game.", exampleAnswers: ["Poker", "Blackjack", "Uno", "Solitaire", "Hearts", "Spades", "Go Fish", "Crazy Eights", "Rummy", "Bridge"], hint: "Games played with a deck of cards." },
+  { id: "q147", category: "40+", question: "Name a genre of movies.", exampleAnswers: ["Action", "Comedy", "Horror", "Romance", "Sci-Fi", "Thriller", "Drama", "Documentary", "Fantasy", "Mystery"], hint: "Categories you browse on streaming apps." },
+  { id: "q148", category: "40+", question: "Name an item typically found in a bathroom.", exampleAnswers: ["Toothbrush", "Toilet", "Sink", "Mirror", "Shower", "Bathtub", "Soap", "Towel", "Shampoo", "Toilet Paper"], hint: "Things you use to get clean." },
+  { id: "q149", category: "40+", question: "Name a major global airline.", exampleAnswers: ["Delta", "American Airlines", "United", "Emirates", "Lufthansa", "British Airways", "Air France", "Qantas", "Singapore Airlines", "Qatar Airways"], hint: "Companies that fly commercial planes." },
+  { id: "q150", category: "40+", question: "Name a recognized university in the world.", exampleAnswers: ["Oxford", "Cambridge", "Harvard", "MIT", "Stanford", "Tokyo University", "University of Toronto", "Sorbonne", "Yale", "Princeton"], hint: "Places of higher education." },
+
+  // ─────────────────────────────────────────────
+  // 20-40 answers (Slightly narrower)
+  // ─────────────────────────────────────────────
+  { id: "q151", category: "20-40", question: "Name a team in Major League Baseball (MLB).", exampleAnswers: ["Yankees", "Dodgers", "Red Sox", "Cubs", "Astros", "Braves", "Mets", "Phillies", "Cardinals", "Giants"], hint: "There are 30 of these." },
+  { id: "q152", category: "20-40", question: "Name a day in the month of February (in a leap year).", exampleAnswers: ["1st", "14th", "28th", "29th", "10th", "15th", "22nd"], hint: "Numbers 1 through 29." },
+  { id: "q153", category: "20-40", question: "Name a letter in the Arabic alphabet.", exampleAnswers: ["Alif", "Baa", "Taa", "Thaa", "Jeem", "Haa", "Khaa", "Daal", "Ra", "Seen"], hint: "There are 28 basic letters." },
+  { id: "q154", category: "20-40", question: "Name a film produced by Pixar Animation Studios.", exampleAnswers: ["Toy Story", "Finding Nemo", "Up", "Inside Out", "The Incredibles", "Monsters, Inc.", "Cars", "Ratatouille", "Coco", "WALL-E"], hint: "There are 28 feature films currently." },
+  { id: "q155", category: "20-40", question: "Name an official James Bond movie.", exampleAnswers: ["Skyfall", "Casino Royale", "Goldfinger", "Dr. No", "Spectre", "GoldenEye", "No Time to Die", "Thunderball"], hint: "There are 25 official EON films." },
+  { id: "q156", category: "20-40", question: "Name a country in the Middle East.", exampleAnswers: ["Saudi Arabia", "Iran", "Iraq", "Israel", "Syria", "Jordan", "Lebanon", "Yemen", "Oman", "UAE"], hint: "There are around 18-20 countries here." },
+  { id: "q157", category: "20-40", question: "Name an element in the transition metals block.", exampleAnswers: ["Iron", "Copper", "Gold", "Silver", "Zinc", "Nickel", "Platinum", "Titanium", "Cobalt", "Mercury"], hint: "The large middle block of the periodic table." },
+  { id: "q158", category: "20-40", question: "Name a book of the Old Testament.", exampleAnswers: ["Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Psalms", "Proverbs", "Isaiah", "Jeremiah", "Daniel"], hint: "There are 39 books in the Protestant version." },
+  { id: "q159", category: "20-40", question: "Name a letter in the Russian Cyrillic alphabet.", exampleAnswers: ["A", "Б (Be)", "В (Ve)", "Г (Ge)", "Д (De)", "Е (Ye)", "Ж (Zhe)", "З (Ze)", "И (I)", "П (Pe)"], hint: "There are 33 letters." },
+  { id: "q160", category: "20-40", question: "Name a US state that joined the Union after 1850.", exampleAnswers: ["California", "Oregon", "Nevada", "Colorado", "Washington", "Montana", "Alaska", "Hawaii", "Arizona", "New Mexico"], hint: "There are exactly 20." },
+
+  // ─────────────────────────────────────────────
+  // 10-20 answers (The squeeze begins)
+  // ─────────────────────────────────────────────
+  { id: "q161", category: "10-20", question: "Name a traditional birthstone.", exampleAnswers: ["Garnet", "Amethyst", "Aquamarine", "Diamond", "Emerald", "Pearl", "Ruby", "Peridot", "Sapphire", "Opal", "Topaz", "Turquoise"], hint: "There are 12 primary traditional ones." },
+  { id: "q162", category: "10-20", question: "Name a US city with a population over 1 million.", exampleAnswers: ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "Austin"], hint: "There are only about 10 of these depending on the census." },
+  { id: "q163", category: "10-20", question: "Name a digit in the hexadecimal numeral system.", exampleAnswers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"], hint: "There are 16 of them." },
+  { id: "q164", category: "10-20", question: "Name a basic CSS display property.", exampleAnswers: ["block", "inline", "inline-block", "flex", "grid", "none", "table", "inline-flex", "contents", "list-item"], hint: "How elements are laid out on a webpage." },
+  { id: "q165", category: "10-20", question: "Name an actor who has played Batman in a live-action theatrical film.", exampleAnswers: ["Adam West", "Michael Keaton", "Val Kilmer", "George Clooney", "Christian Bale", "Ben Affleck", "Robert Pattinson"], hint: "There are less than 10 main ones." },
+  { id: "q166", category: "10-20", question: "Name an element in the Lanthanide series.", exampleAnswers: ["Lanthanum", "Cerium", "Praseodymium", "Neodymium", "Promethium", "Samarium", "Europium", "Gadolinium"], hint: "There are 15 of these rare earth metals." },
+  { id: "q167", category: "10-20", question: "Name a track on Michael Jackson's 'Thriller' album.", exampleAnswers: ["Wanna Be Startin' Somethin'", "Baby Be Mine", "The Girl Is Mine", "Thriller", "Beat It", "Billie Jean", "Human Nature", "P.Y.T.", "The Lady in My Life"], hint: "There are exactly 9 tracks." },
+  { id: "q168", category: "10-20", question: "Name a club currently in the Spanish La Liga.", exampleAnswers: ["Real Madrid", "Barcelona", "Atletico Madrid", "Sevilla", "Valencia", "Athletic Bilbao", "Real Sociedad", "Betis"], hint: "There are 20 teams in the top flight." },
+  { id: "q169", category: "10-20", question: "Name a US constitutional amendment in the Bill of Rights.", exampleAnswers: ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"], hint: "There are 10 of these." },
+  { id: "q170", category: "10-20", question: "Name a prime number between 1 and 50.", exampleAnswers: ["2", "3", "5", "7", "11", "13", "17", "19", "23", "29", "31", "37", "41", "43", "47"], hint: "There are 15 of them." },
+
+  // ─────────────────────────────────────────────
+  // 5-10 answers (Getting highly specific)
+  // ─────────────────────────────────────────────
+  { id: "q171", category: "5-10", question: "Name a member of the G7 (Group of Seven).", exampleAnswers: ["Canada", "France", "Germany", "Italy", "Japan", "United Kingdom", "United States"], hint: "There are 7 member nations." },
+  { id: "q172", category: "5-10", question: "Name a standard SI base unit.", exampleAnswers: ["Meter", "Kilogram", "Second", "Ampere", "Kelvin", "Mole", "Candela"], hint: "There are 7 fundamental units in physics." },
+  { id: "q173", category: "5-10", question: "Name a color on the national flag of South Africa.", exampleAnswers: ["Red", "Green", "Blue", "Yellow", "White", "Black"], hint: "There are 6 distinct colors." },
+  { id: "q174", category: "5-10", question: "Name a piece in a standard game of Monopoly (Classic Tokens).", exampleAnswers: ["Top Hat", "Thimble", "Iron", "Shoe", "Battleship", "Dog (Scottie)", "Wheelbarrow", "Car"], hint: "The classic 8 metal tokens." },
+  { id: "q175", category: "5-10", question: "Name a film in Peter Jackson's Middle-earth saga.", exampleAnswers: ["The Fellowship of the Ring", "The Two Towers", "The Return of the King", "An Unexpected Journey", "The Desolation of Smaug", "The Battle of the Five Armies"], hint: "There are 6 movies (3 LOTR, 3 Hobbit)." },
+  { id: "q176", category: "5-10", question: "Name a standard phase of mitosis.", exampleAnswers: ["Prophase", "Prometaphase", "Metaphase", "Anaphase", "Telophase"], hint: "There are 5 main stages of cell division." },
+  { id: "q177", category: "5-10", question: "Name a tier in standard competitive video game ranking systems.", exampleAnswers: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Challenger"], hint: "Usually 6-8 precious metals/stones." },
+  { id: "q178", category: "5-10", question: "Name an Ivy League university.", exampleAnswers: ["Harvard", "Yale", "Princeton", "Columbia", "Brown", "Dartmouth", "Cornell", "University of Pennsylvania"], hint: "There are exactly 8." },
+  { id: "q179", category: "5-10", question: "Name a recognized dwarf planet in our solar system.", exampleAnswers: ["Pluto", "Ceres", "Eris", "Haumea", "Makemake"], hint: "There are 5 officially recognized by the IAU." },
+  { id: "q180", category: "5-10", question: "Name a playable character class in Diablo II.", exampleAnswers: ["Amazon", "Necromancer", "Barbarian", "Sorceress", "Paladin", "Druid", "Assassin"], hint: "There are 7 classes with the expansion." },
+
+  // ─────────────────────────────────────────────
+  // 1-5 answers (Finals territory)
+  // ─────────────────────────────────────────────
+  { id: "q181", category: "1-5", question: "Name a layer of the Earth.", exampleAnswers: ["Crust", "Mantle", "Outer Core", "Inner Core"], hint: "There are 4 primary layers." },
+  { id: "q182", category: "1-5", question: "Name an ocean that borders the United States.", exampleAnswers: ["Pacific", "Atlantic", "Arctic"], hint: "There are 3." },
+  { id: "q183", category: "1-5", question: "Name a member of the rock band Queen.", exampleAnswers: ["Freddie Mercury", "Brian May", "Roger Taylor", "John Deacon"], hint: "There are 4 original members." },
+  { id: "q184", category: "1-5", question: "Name a standard string on a violin.", exampleAnswers: ["G", "D", "A", "E"], hint: "There are 4 strings." },
+  { id: "q185", category: "1-5", question: "Name a founder of Hogwarts.", exampleAnswers: ["Godric Gryffindor", "Helga Hufflepuff", "Rowena Ravenclaw", "Salazar Slytherin"], hint: "There are 4 founders." },
+  { id: "q186", category: "1-5", question: "Name a terrestrial (rocky) planet in our solar system.", exampleAnswers: ["Mercury", "Venus", "Earth", "Mars"], hint: "There are 4 inner planets." },
+  { id: "q187", category: "1-5", question: "Name a major championship in men's professional golf.", exampleAnswers: ["Masters", "PGA Championship", "US Open", "The Open Championship"], hint: "There are 4 majors." },
+  { id: "q188", category: "1-5", question: "Name a color of a Teletubby.", exampleAnswers: ["Purple", "Green", "Yellow", "Red"], hint: "Tinky Winky, Dipsy, Laa-Laa, Po." },
+  { id: "q189", category: "1-5", question: "Name a type of triangle based on side length.", exampleAnswers: ["Equilateral", "Isosceles", "Scalene"], hint: "There are 3 main types." },
+  { id: "q190", category: "1-5", question: "Name a month of the year with exactly 30 days.", exampleAnswers: ["April", "June", "September", "November"], hint: "There are 4 of them." },
+
+  // ─────────────────────────────────────────────
+  // 1-3 answers (Absolute sudden death)
+  // ─────────────────────────────────────────────
+  { id: "q191", category: "1-3", question: "Name a digit in the binary numeral system.", exampleAnswers: ["0", "1"], hint: "There are only 2." },
+  { id: "q192", category: "1-3", question: "Name a possible result of a standard chess game.", exampleAnswers: ["Win", "Loss", "Draw"], hint: "There are 3 main outcomes." },
+  { id: "q193", category: "1-3", question: "Name a pole on a standard battery.", exampleAnswers: ["Positive", "Negative"], hint: "There are 2 sides." },
+  { id: "q194", category: "1-3", question: "Name a hemisphere of the Earth divided by the Equator.", exampleAnswers: ["Northern", "Southern"], hint: "There are 2." },
+  { id: "q195", category: "1-3", question: "Name an outcome option in a game of Rock, Paper, Scissors.", exampleAnswers: ["Rock", "Paper", "Scissors"], hint: "There are 3 choices." },
+  { id: "q196", category: "1-3", question: "Name a side of a standard coin.", exampleAnswers: ["Heads", "Tails"], hint: "There are 2 sides." },
+  { id: "q197", category: "1-3", question: "Name a color of a standard pedestrian crossing signal in the US.", exampleAnswers: ["White", "Orange"], hint: "Walk or Don't Walk (2 colors)." },
+  { id: "q198", category: "1-3", question: "Name a grammatical gender in standard Spanish.", exampleAnswers: ["Masculine", "Feminine"], hint: "There are 2 primary ones." },
+  { id: "q199", category: "1-3", question: "Name a standard mouse click button.", exampleAnswers: ["Left", "Right", "Middle"], hint: "Most mice have 3 primary buttons." },
+  { id: "q200", category: "1-3", question: "Name a valid binary response to a Yes/No question.", exampleAnswers: ["Yes", "No"], hint: "It's one or the other (2)." }
 ];
 
 // Pick a random question from a specific category
