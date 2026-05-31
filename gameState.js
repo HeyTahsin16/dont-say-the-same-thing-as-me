@@ -2,7 +2,7 @@
 const games = new Map(); // channelId -> GameState
 
 const ROUND_ONE_DURATION_MS = 60_000;  // 60 seconds for round 1 (joining round)
-const ROUND_DURATION_MS     = 20_000;  // 20 seconds for all subsequent rounds
+const ROUND_DURATION_MS     = 30_000;  // 30 seconds for all subsequent rounds
 const RESULT_DURATION_MS    = 10_000;  // 10 seconds to show results
 
 class GameState {
@@ -30,6 +30,11 @@ class GameState {
     this.resultTimer = null;
 
     this.usedQuestionIds = new Set();
+
+    // ── Player cap (optional) ────────────────────────────────────────────────
+    // If set via /startgame players: option, round 1 ends early once this
+    // many players have answered instead of waiting the full 60 seconds.
+    this.expectedPlayers = null;
 
     // ── Dynamic difficulty tracking ──────────────────────────────────────────
     // How many rounds to stay on the current category before re-evaluating.
