@@ -64,7 +64,7 @@ function answersMatch(a, b) {
 }
 
 // ─── JUDGE ROUND ───────────────────────────────────────────────────────────────
-async function judgeRound({ question, exampleAnswers, playerAnswers }) {
+async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiAnswers = [] }) {
   if (!genAI) throw new Error("Gemini not initialized");
 
   const model = genAI.getGenerativeModel({ model: activeModel });
@@ -73,34 +73,35 @@ async function judgeRound({ question, exampleAnswers, playerAnswers }) {
     .map(([id, ans]) => `  - Player "${id}": "${ans}"`)
     .join("\n");
 
-  // NOTE: We deliberately do NOT ask Gemini to detect AI-answer matches.
-  // We only ask it to: (1) pick its answer, (2) decide if each player answer
-  // is a valid, correct answer to the question (ignoring whether it matches AI).
+  const avoidSection = previousAiAnswers.length > 0
+    ? `\n== ANSWERS YOU ALREADY USED FOR THIS QUESTION (do NOT repeat these) ==\n[${previousAiAnswers.join(", ")}]\nPick the next most obvious/common answer that is not in this list.\n`
+    : "";
+
   const prompt = `You are the AI host of "Don't Say The Same Thing As Me" — a Discord game inspired by bradyyourtutor on YouTube.
 
-== YOUR TWO JOBS ==
-1. Pick YOUR answer to the question
-2. Decide if each player's answer is a valid, correct answer to the question
+== YOUR TWO JOBS THIS ROUND ==
+1. Pick YOUR answer to the question (most common/obvious one, varying from past answers)
+2. Judge each player's answer independently
 
 == QUESTION ==
 "${question}"
 
-== EXAMPLE VALID ANSWERS (for reference) ==
+== EXAMPLE VALID ANSWERS (scope reference) ==
 [${exampleAnswers.join(", ")}]
-
+${avoidSection}
 == PLAYER ANSWERS ==
 ${playerSection || "  (no players answered)"}
 
-== JOB 1 — YOUR ANSWER ==
-Pick the single most common, obvious, gut-reaction answer or pick the most obscure answer each having 50/50 chance.
-- "name a color" → "Red"
-- "name a sport" → "Football"
-- "name a planet" → "Earth"
-Give EXACTLY one answer. No slashes, no lists, no alternatives.
+== RULE 1 — PICKING YOUR ANSWER ==
+- Choose the ONE answer most people would blurt out first without thinking
+- Example: "name a color" → "Red", then next time "Blue", then "Green"
+- Example: "name a sport" → "Football", then next time "Cricket", then "Basketball"
+- Give EXACTLY one word or short phrase. No slashes, no "or", no alternatives.
+- If the most obvious answer is in your "already used" list above, pick the next most recognizable one.
 
-== JOB 2 — VALIDITY JUDGING (NOT match detection) ==
+== RULE 2 — JUDGING: IS THE ANSWER VALID? ==
 For each player, decide ONLY: is their answer a real, correct answer to this question?
-- PASS (valid: true) if: it's a genuine, correct answer to the question (even if it's the same as yours — you handle matching separately)
+- PASS (valid: true) if: it's a genuine, correct answer to the question
 - FAIL (valid: false) if: gibberish, nonsense, random letters, factually wrong, or completely off-topic
 - Fix obvious typos silently (e.g. "photosyntesis" → "photosynthesis" still passes)
 - Do NOT eliminate based on whether it matches your answer — that is handled elsewhere
