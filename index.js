@@ -18,6 +18,7 @@ const { initGemini, judgeRound, setModel, getModel, getAvailableModels } = requi
 const { createGame, getGame, endGame, ROUND_ONE_DURATION_MS, ROUND_DURATION_MS, RESULT_DURATION_MS } = require("./gameState");
 const { getQuestionByCategory, resolveCategory } = require("./questions");
 const { recordWin, getTopPlayers } = require("./leaderboard");
+const { getPreviousAnswers, recordAnswer: recordAiAnswer } = require("./aiHistory");
 
 // ─── ENV CHECKS ────────────────────────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -414,13 +415,20 @@ async function resolveRound(game, channel) {
 
   if (Object.keys(playerAnswers).length > 0) {
     try {
+      // Pull persistent AI answer history for this question so it varies across sessions
+      const previousAiAnswers = getPreviousAnswers(question.id);
+
       const result = await judgeRound({
         question: question.question,
         exampleAnswers: question.exampleAnswers,
         playerAnswers,
+        previousAiAnswers,
       });
       aiAnswer = result.aiAnswer;
       judgements = result.judgements;
+
+      // Persist this answer so future sessions know to avoid it (rolling cap)
+      recordAiAnswer(question.id, aiAnswer);
     } catch (err) {
       console.error("judgeRound error:", err);
     }
@@ -579,7 +587,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   const game = getGame(interaction.channelId);
   if (!game || game.phase !== "answering") {
-    return interaction.reply({ content: "No active round to skip.", ephemeral: true });
+    return interaction.reply({ content: "No active round to skip.", flags: 64 });
   }
 
   const userId = interaction.user.id;
@@ -590,7 +598,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (!isActivePlayer) {
     return interaction.reply({
       content: "❌ Only active players still in the game can vote to skip.",
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -598,12 +606,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (game.skipUsedRounds.has(game.round)) {
     return interaction.reply({
       content: "❌ Skip already used this round — only one skip per round is allowed.",
-      ephemeral: true,
+      flags: 64,
     });
   }
 
   if (game.skipVotes.has(userId)) {
-    return interaction.reply({ content: "You already voted to skip!", ephemeral: true });
+    return interaction.reply({ content: "You already voted to skip!", flags: 64 });
   }
 
   game.skipVotes.add(userId);
@@ -634,7 +642,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (existing && existing.isActive()) {
       return interaction.reply({
         content: "⚠️ A game is already running in this channel! Use `/endgame` to stop it first.",
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -678,7 +686,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   else if (commandName === "endgame") {
     const game = getGame(channelId);
     if (!game) {
-      return interaction.reply({ content: "❌ No game is running right now.", ephemeral: true });
+      return interaction.reply({ content: "❌ No game is running right now.", flags: 64 });
     }
     // Only the starter or someone with Manage Messages can force-end
     const member = interaction.member;
@@ -689,7 +697,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (!canEnd) {
       return interaction.reply({
         content: "❌ Only the game starter or a moderator can force-end the game.",
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -738,7 +746,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (!isOwner) {
       return interaction.reply({
         content: "❌ Only the bot owner can change the Gemini model.",
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -814,7 +822,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             }
           ),
       ],
-      ephemeral: true,
+      flags: 64,
     });
   }
 });
