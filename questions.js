@@ -273,7 +273,121 @@ const questions = [
   { id: "q197", category: "1-3", question: "Name a color of a standard pedestrian crossing signal in the US.", exampleAnswers: ["White", "Orange"], hint: "Walk or Don't Walk (2 colors)." },
   { id: "q198", category: "1-3", question: "Name a grammatical gender in standard Spanish.", exampleAnswers: ["Masculine", "Feminine"], hint: "There are 2 primary ones." },
   { id: "q199", category: "1-3", question: "Name a standard mouse click button.", exampleAnswers: ["Left", "Right", "Middle"], hint: "Most mice have 3 primary buttons." },
-  { id: "q200", category: "1-3", question: "Name a valid binary response to a Yes/No question.", exampleAnswers: ["Yes", "No"], hint: "It's one or the other (2)." }
+  { id: "q200", category: "1-3", question: "Name a valid binary response to a Yes/No question.", exampleAnswers: ["Yes", "No"], hint: "It's one or the other (2)." },
+
+  // ─────────────────────────────────────────────
+  // 40+ answers (Round 4 - Wide Open)
+  // ─────────────────────────────────────────────
+  { id: "q201", category: "40+", question: "Name a country located in Europe.", exampleAnswers: ["France", "Germany", "Italy", "Spain", "Poland", "Sweden", "Norway", "Greece", "Portugal", "Belgium"], hint: "There are 44 recognized sovereign states here." },
+  { id: "q202", category: "40+", question: "Name a Pokémon from Generation 1 (Kanto).", exampleAnswers: ["Pikachu", "Charizard", "Bulbasaur", "Squirtle", "Jigglypuff", "Gengar", "Mewtwo", "Eevee", "Snorlax", "Dragonite"], hint: "There are 151 original pocket monsters." },
+  { id: "q203", category: "40+", question: "Name a recognized video game genre.", exampleAnswers: ["RPG", "FPS", "Platformer", "Battle Royale", "Puzzle", "Fighting", "Racing", "MMO", "Simulation", "Strategy"], hint: "How games are categorized by gameplay." },
+  { id: "q204", category: "40+", question: "Name a superhero from Marvel or DC comics.", exampleAnswers: ["Spider-Man", "Batman", "Superman", "Iron Man", "Wonder Woman", "Captain America", "The Flash", "Thor", "Wolverine", "Hulk"], hint: "Characters with secret identities and capes." },
+  { id: "q205", category: "40+", question: "Name a body of water (Ocean, Sea, Lake, or River).", exampleAnswers: ["Pacific Ocean", "Mediterranean Sea", "Lake Superior", "Nile River", "Red Sea", "Amazon River", "Indian Ocean", "Caspian Sea"], hint: "Major geographical water formations." },
+  { id: "q206", category: "40+", question: "Name a tool used in gardening or farming.", exampleAnswers: ["Shovel", "Rake", "Hoe", "Trowel", "Watering Can", "Wheelbarrow", "Pruning Shears", "Pitchfork", "Tractor"], hint: "Things you use to work the soil or plants." },
+  { id: "q207", category: "40+", question: "Name a popular brand of athletic shoes or apparel.", exampleAnswers: ["Nike", "Adidas", "Puma", "Under Armour", "Reebok", "New Balance", "Asics", "Converse", "Vans", "Fila"], hint: "Brands you wear to the gym or court." },
+  { id: "q208", category: "40+", question: "Name a popular flavor of ice cream.", exampleAnswers: ["Vanilla", "Chocolate", "Strawberry", "Mint Chocolate Chip", "Cookie Dough", "Rocky Road", "Pistachio", "Butter Pecan"], hint: "Check the freezer aisle." },
+  { id: "q209", category: "40+", question: "Name a piece of jewelry or wearable accessory.", exampleAnswers: ["Necklace", "Ring", "Bracelet", "Earrings", "Watch", "Sunglasses", "Belt", "Scarf", "Tie", "Hairband"], hint: "Things you wear to elevate an outfit." },
+  { id: "q210", category: "40+", question: "Name a type of transportation vehicle.", exampleAnswers: ["Car", "Bus", "Train", "Airplane", "Bicycle", "Motorcycle", "Helicopter", "Boat", "Subway", "Scooter"], hint: "Machines that move people from A to B." },
+  { id: "q211", category: "40+", question: "Name a hobby or recreational activity.", exampleAnswers: ["Reading", "Painting", "Gaming", "Hiking", "Cooking", "Photography", "Knitting", "Dancing", "Fishing", "Cycling"], hint: "Things people do for fun in their free time." },
+  { id: "q212", category: "40+", question: "Name a type of natural disaster.", exampleAnswers: ["Earthquake", "Hurricane", "Tornado", "Tsunami", "Volcanic Eruption", "Wildfire", "Flood", "Blizzard", "Drought", "Avalanche"], hint: "Extreme, destructive weather or geological events." },
+  { id: "q213", category: "40+", question: "Name a common phobia (fear of...).", exampleAnswers: ["Spiders (Arachnophobia)", "Heights (Acrophobia)", "Enclosed Spaces (Claustrophobia)", "Needles", "Public Speaking", "Snakes", "Darkness", "Flying"], hint: "Things that cause irrational panic." },
+  { id: "q214", category: "40+", question: "Name a standard item found on a restaurant table.", exampleAnswers: ["Salt Shaker", "Pepper Shaker", "Napkins", "Forks", "Knives", "Spoons", "Menu", "Ketchup", "Glasses", "Plates"], hint: "Things sitting there before you even order." },
+  { id: "q215", category: "40+", question: "Name a subject typically taught in high school.", exampleAnswers: ["Algebra", "Biology", "World History", "Chemistry", "Physical Education", "Geometry", "English Literature", "Physics"], hint: "Classes you had to take to graduate." },
+  { id: "q216", category: "40+", question: "Name a wild animal native to Africa.", exampleAnswers: ["Lion", "Elephant", "Giraffe", "Zebra", "Cheetah", "Hippopotamus", "Rhinoceros", "Gorilla", "Hyena", "Meerkat"], hint: "Think of the savanna or a safari." },
+  { id: "q217", category: "40+", question: "Name a piece of camping equipment.", exampleAnswers: ["Tent", "Sleeping Bag", "Flashlight", "Camp Stove", "Cooler", "Lantern", "Matches", "Compass", "Multi-tool", "Backpack"], hint: "Gear you pack to survive in the woods." },
+  { id: "q218", category: "40+", question: "Name a tool used for cooking or baking.", exampleAnswers: ["Spatula", "Whisk", "Measuring Cup", "Rolling Pin", "Cutting Board", "Ladle", "Tongs", "Colander", "Peeler", "Oven Mitt"], hint: "Utensils found in kitchen drawers." },
+  { id: "q219", category: "40+", question: "Name a type of footwear.", exampleAnswers: ["Sneakers", "Boots", "Sandals", "High Heels", "Loafers", "Slippers", "Flip-Flops", "Cleats", "Oxfords", "Crocs"], hint: "Things that go on your feet." },
+  { id: "q220", category: "40+", question: "Name a popular social media platform.", exampleAnswers: ["Instagram", "TikTok", "X (Twitter)", "Facebook", "Snapchat", "LinkedIn", "Reddit", "Pinterest", "YouTube", "Discord"], hint: "Apps where people post and scroll." },
+  { id: "q221", category: "40+", question: "Name a type of fabric or textile material.", exampleAnswers: ["Cotton", "Silk", "Denim", "Wool", "Polyester", "Leather", "Linen", "Velvet", "Nylon", "Spandex"], hint: "What clothes and furniture are made of." },
+  { id: "q222", category: "40+", question: "Name a room or specific area in a typical house.", exampleAnswers: ["Kitchen", "Bedroom", "Bathroom", "Living Room", "Dining Room", "Basement", "Attic", "Garage", "Hallway", "Closet"], hint: "The floorplan of a home." },
+  { id: "q223", category: "40+", question: "Name a commonly kept household pet.", exampleAnswers: ["Dog", "Cat", "Goldfish", "Hamster", "Parrot", "Guinea Pig", "Rabbit", "Turtle", "Ferret", "Lizard"], hint: "Animals that live comfortably indoors with humans." },
+  { id: "q224", category: "40+", question: "Name a recognized musical tempo or dynamic marking.", exampleAnswers: ["Allegro", "Andante", "Forte", "Piano", "Crescendo", "Presto", "Largo", "Adagio", "Mezzo-forte"], hint: "Italian words used on sheet music." },
+  { id: "q225", category: "40+", question: "Name an item of makeup or cosmetics.", exampleAnswers: ["Lipstick", "Mascara", "Foundation", "Eyeliner", "Blush", "Eyeshadow", "Concealer", "Highlighter", "Bronzer", "Lip Gloss"], hint: "Products used in a beauty routine." },
+
+  // ─────────────────────────────────────────────
+  // 20-40 answers (Slightly narrower)
+  // ─────────────────────────────────────────────
+  { id: "q226", category: "20-40", question: "Name a human tooth type or specific human tooth.", exampleAnswers: ["Incisor", "Canine", "Premolar", "Molar", "Wisdom Tooth"], hint: "There are 32 of them in an adult mouth." },
+  { id: "q227", category: "20-40", question: "Name a country in North America (including Central America and the Caribbean).", exampleAnswers: ["USA", "Canada", "Mexico", "Cuba", "Jamaica", "Costa Rica", "Panama", "Haiti", "Bahamas"], hint: "There are 23 sovereign nations here." },
+  { id: "q228", category: "20-40", question: "Name a recognized constellation in the night sky.", exampleAnswers: ["Orion", "Ursa Major", "Cassiopeia", "Andromeda", "Cygnus", "Lyra", "Scorpius", "Pegasus", "Draco"], hint: "There are 88 modern constellations." },
+  { id: "q229", category: "20-40", question: "Name a US state with a coastline on the ocean or Gulf of Mexico.", exampleAnswers: ["California", "Florida", "New York", "Texas", "Hawaii", "Washington", "Oregon", "Maine", "North Carolina", "Louisiana"], hint: "There are exactly 23 of these." },
+  { id: "q230", category: "20-40", question: "Name a proteinogenic amino acid found in humans.", exampleAnswers: ["Alanine", "Glycine", "Leucine", "Valine", "Tryptophan", "Tyrosine", "Serine", "Proline", "Glutamine"], hint: "There are 20 standard ones encoded by human DNA." },
+  { id: "q231", category: "20-40", question: "Name a book in the New Testament of the Bible.", exampleAnswers: ["Matthew", "Mark", "Luke", "John", "Acts", "Romans", "Revelation", "Corinthians", "Galatians", "Ephesians"], hint: "There are 27 of these." },
+  { id: "q232", category: "20-40", question: "Name an official working language of the European Union.", exampleAnswers: ["English", "French", "German", "Spanish", "Italian", "Dutch", "Polish", "Greek", "Swedish", "Portuguese"], hint: "There are 24 official languages." },
+  { id: "q233", category: "20-40", question: "Name a team currently in the NHL.", exampleAnswers: ["Maple Leafs", "Bruins", "Rangers", "Canadiens", "Avalanche", "Oilers", "Penguins", "Blackhawks", "Golden Knights"], hint: "There are 32 franchises." },
+  { id: "q234", category: "20-40", question: "Name a playable character class or race in standard D&D 5e.", exampleAnswers: ["Fighter", "Wizard", "Rogue", "Cleric", "Elf", "Dwarf", "Human", "Halfling", "Tiefling", "Dragonborn"], hint: "There are around 21 core options in the Player's Handbook." },
+  { id: "q235", category: "20-40", question: "Name a standard whole-hour time zone offset from UTC.", exampleAnswers: ["UTC-5", "UTC+1", "UTC+8", "UTC-8", "UTC+9", "UTC+0", "UTC-4", "UTC+10"], hint: "There are 24 standard ones." },
+  { id: "q236", category: "20-40", question: "Name a letter in the English alphabet from N to Z.", exampleAnswers: ["N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], hint: "The second half of the alphabet (13 letters)." },
+  { id: "q237", category: "20-40", question: "Name a US state that starts with the letter M, N, or O.", exampleAnswers: ["Michigan", "Montana", "New York", "Nevada", "Ohio", "Oregon", "Maryland", "New Jersey", "Oklahoma", "Nebraska"], hint: "There are 19 states in this group." },
+  { id: "q238", category: "20-40", question: "Name a country in Europe that does NOT use the Euro as its primary currency.", exampleAnswers: ["United Kingdom", "Switzerland", "Sweden", "Norway", "Denmark", "Poland", "Hungary", "Czech Republic", "Romania"], hint: "Around 24 European nations fit this." },
+  { id: "q239", category: "20-40", question: "Name an official track/cup in Mario Kart 8 Deluxe (Base Game).", exampleAnswers: ["Mario Circuit", "Rainbow Road", "Toad Harbor", "Mount Wario", "Cloudtop Cruise", "Electrodrome", "Bowser's Castle"], hint: "There are 48 base tracks." },
+  { id: "q240", category: "20-40", question: "Name a team in Major League Soccer (MLS).", exampleAnswers: ["LA Galaxy", "Seattle Sounders", "Atlanta United", "Inter Miami", "Toronto FC", "Portland Timbers", "NYCFC"], hint: "There are 29 clubs." },
+  { id: "q241", category: "20-40", question: "Name a structural bone in the human hand or wrist.", exampleAnswers: ["Scaphoid", "Lunate", "Trapezium", "Metacarpal", "Proximal Phalanx", "Distal Phalanx", "Capitate"], hint: "There are 27 bones in each hand." },
+  { id: "q242", category: "20-40", question: "Name a color found on the standard HTML/CSS color wheel base keywords.", exampleAnswers: ["Red", "Blue", "Green", "Yellow", "Cyan", "Magenta", "Black", "White", "Gray"], hint: "There are 16 core named colors." },
+  { id: "q243", category: "20-40", question: "Name a standard key located on the 'home row' of a QWERTY keyboard.", exampleAnswers: ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Semicolon", "Apostrophe"], hint: "Where your fingers rest (11 keys)." },
+  { id: "q244", category: "20-40", question: "Name an Academy Award (Oscar) category.", exampleAnswers: ["Best Picture", "Best Director", "Best Actor", "Best Actress", "Best Original Score", "Best Cinematography", "Best Editing"], hint: "There are 23 competitive categories." },
+  { id: "q245", category: "20-40", question: "Name a US President whose face is featured on current US paper money or coins.", exampleAnswers: ["Washington", "Lincoln", "Jefferson", "Roosevelt", "Kennedy", "Jackson", "Grant"], hint: "There are about 15 individuals featured." },
+
+  // ─────────────────────────────────────────────
+  // 10-20 answers (The squeeze begins)
+  // ─────────────────────────────────────────────
+  { id: "q246", category: "10-20", question: "Name a traditional anniversary gift material (Years 1-15).", exampleAnswers: ["Paper", "Cotton", "Leather", "Wood", "Iron", "Copper", "Bronze", "Pottery", "Tin", "Steel", "Silk", "Lace", "Ivory", "Crystal"], hint: "There are 15 of these." },
+  { id: "q247", category: "10-20", question: "Name a face card in a standard deck of playing cards.", exampleAnswers: ["King of Hearts", "Queen of Spades", "Jack of Diamonds", "King of Clubs", "Queen of Diamonds"], hint: "There are exactly 12 of them." },
+  { id: "q248", category: "10-20", question: "Name a US state that starts with a vowel.", exampleAnswers: ["Alabama", "Alaska", "Arizona", "Arkansas", "Idaho", "Illinois", "Indiana", "Iowa", "Ohio", "Oklahoma", "Oregon", "Utah"], hint: "There are exactly 12." },
+  { id: "q249", category: "10-20", question: "Name a prime number between 1 and 40.", exampleAnswers: ["2", "3", "5", "7", "11", "13", "17", "19", "23", "29", "31", "37"], hint: "There are 12 of them." },
+  { id: "q250", category: "10-20", question: "Name a type of club found in a standard golf bag.", exampleAnswers: ["Driver", "Putter", "Sand Wedge", "Pitching Wedge", "Iron", "Wood", "Hybrid"], hint: "You're legally allowed a maximum of 14." },
+  { id: "q251", category: "10-20", question: "Name a line on the London Underground network.", exampleAnswers: ["Bakerloo", "Central", "Circle", "District", "Jubilee", "Metropolitan", "Northern", "Piccadilly", "Victoria", "Waterloo & City"], hint: "There are 11 official lines." },
+  { id: "q252", category: "10-20", question: "Name a US state that shares a land border with Canada.", exampleAnswers: ["Washington", "Idaho", "Montana", "North Dakota", "Minnesota", "Michigan", "New York", "Vermont", "Maine", "Alaska"], hint: "There are 13 of these." },
+  { id: "q253", category: "10-20", question: "Name a physical button, trigger, or stick on a standard PS5 DualSense controller.", exampleAnswers: ["Cross", "Circle", "Square", "Triangle", "L1", "L2", "R1", "R2", "D-Pad Up", "Options", "Share", "Touchpad"], hint: "There are around 15 primary inputs." },
+  { id: "q254", category: "10-20", question: "Name a major structural bone in the human face (Viscerocranium).", exampleAnswers: ["Mandible", "Maxilla", "Zygomatic", "Nasal", "Lacrimal", "Palatine", "Vomer", "Inferior Nasal Concha"], hint: "There are 14 of these." },
+  { id: "q255", category: "10-20", question: "Name a sign of the Eastern (Chinese) Zodiac.", exampleAnswers: ["Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake", "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"], hint: "There are 12." },
+  { id: "q256", category: "10-20", question: "Name a specific rank (number/letter) in a standard deck of cards.", exampleAnswers: ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"], hint: "There are 13 possible ranks." },
+  { id: "q257", category: "10-20", question: "Name an amendment in the US Bill of Rights.", exampleAnswers: ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"], hint: "The first 10 amendments." },
+  { id: "q258", category: "10-20", question: "Name a US city with a population over 1 million people.", exampleAnswers: ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas"], hint: "There are exactly 9." },
+  { id: "q259", category: "10-20", question: "Name a valid digit in the hexadecimal numeral system.", exampleAnswers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"], hint: "Base-16 has 16 digits." },
+  { id: "q260", category: "10-20", question: "Name a month of the year.", exampleAnswers: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], hint: "There are 12." },
+
+  // ─────────────────────────────────────────────
+  // 5-10 answers (Getting highly specific)
+  // ─────────────────────────────────────────────
+  { id: "q261", category: "5-10", question: "Name a color of the rainbow.", exampleAnswers: ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"], hint: "ROYGBIV (7 colors)." },
+  { id: "q262", category: "5-10", question: "Name a day of the week.", exampleAnswers: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], hint: "There are 7." },
+  { id: "q263", category: "5-10", question: "Name a piece in a standard game of chess.", exampleAnswers: ["King", "Queen", "Bishop", "Knight", "Rook", "Pawn"], hint: "There are 6 unique pieces." },
+  { id: "q264", category: "5-10", question: "Name one of the Seven Deadly Sins.", exampleAnswers: ["Pride", "Greed", "Lust", "Envy", "Gluttony", "Wrath", "Sloth"], hint: "Exactly 7." },
+  { id: "q265", category: "5-10", question: "Name one of the Great Lakes of North America.", exampleAnswers: ["Huron", "Ontario", "Michigan", "Erie", "Superior"], hint: "HOMES (5 lakes)." },
+  { id: "q266", category: "5-10", question: "Name a Noble Gas from the periodic table.", exampleAnswers: ["Helium", "Neon", "Argon", "Krypton", "Xenon", "Radon", "Oganesson"], hint: "Group 18 has 7 elements." },
+  { id: "q267", category: "5-10", question: "Name a continent on Earth.", exampleAnswers: ["Africa", "Antarctica", "Asia", "Europe", "North America", "South America", "Australia"], hint: "There are 7." },
+  { id: "q268", category: "5-10", question: "Name a major recognized phase of the moon.", exampleAnswers: ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous", "Full Moon", "Waning Gibbous", "Third Quarter", "Waning Crescent"], hint: "There are 8 distinct phases." },
+  { id: "q269", category: "5-10", question: "Name a standard starting position in indoor volleyball.", exampleAnswers: ["Setter", "Outside Hitter", "Opposite Hitter", "Middle Blocker", "Libero", "Defensive Specialist"], hint: "There are 6 players on the court per team." },
+  { id: "q270", category: "5-10", question: "Name a base unit in the International System of Units (SI).", exampleAnswers: ["Meter", "Kilogram", "Second", "Ampere", "Kelvin", "Mole", "Candela"], hint: "There are 7 fundamental physical units." },
+  { id: "q271", category: "5-10", question: "Name a primary layer of Earth's atmosphere.", exampleAnswers: ["Troposphere", "Stratosphere", "Mesosphere", "Thermosphere", "Exosphere"], hint: "There are 5 main layers." },
+  { id: "q272", category: "5-10", question: "Name a 'flavor' of quark in particle physics.", exampleAnswers: ["Up", "Down", "Charm", "Strange", "Top", "Bottom"], hint: "There are 6." },
+  { id: "q273", category: "5-10", question: "Name a main color of the original Mighty Morphin Power Rangers.", exampleAnswers: ["Red", "Blue", "Black", "Yellow", "Pink", "Green", "White"], hint: "There were 6 core colors (plus White later)." },
+  { id: "q274", category: "5-10", question: "Name a standard face button on an Xbox or PlayStation controller.", exampleAnswers: ["A", "B", "X", "Y", "Cross", "Circle", "Square", "Triangle"], hint: "There are 8 main ones across both." },
+  { id: "q275", category: "5-10", question: "Name a standard open string on a standard 6-string acoustic guitar.", exampleAnswers: ["E", "A", "D", "G", "B"], hint: "There are 6 strings, but only 5 unique notes." },
+
+  // ─────────────────────────────────────────────
+  // 1-5 answers (Finals territory)
+  // ─────────────────────────────────────────────
+  { id: "q276", category: "1-5", question: "Name a corner space on a standard Monopoly board.", exampleAnswers: ["Go", "Jail", "Free Parking", "Go to Jail"], hint: "There are exactly 4." },
+  { id: "q277", category: "1-5", question: "Name a canonical chamber of the human heart.", exampleAnswers: ["Left Atrium", "Right Atrium", "Left Ventricle", "Right Ventricle"], hint: "There are 4." },
+  { id: "q278", category: "1-5", question: "Name a distinct stage of a butterfly's life cycle.", exampleAnswers: ["Egg", "Larva (Caterpillar)", "Pupa (Chrysalis)", "Adult (Butterfly)"], hint: "There are 4." },
+  { id: "q279", category: "1-5", question: "Name a fundamental force of nature.", exampleAnswers: ["Gravity", "Electromagnetism", "Strong Nuclear Force", "Weak Nuclear Force"], hint: "There are 4." },
+  { id: "q280", category: "1-5", question: "Name an open string on a standard 4-string bass guitar.", exampleAnswers: ["E", "A", "D", "G"], hint: "There are exactly 4." },
+  { id: "q281", category: "1-5", question: "Name a permanent member nation of the UN Security Council.", exampleAnswers: ["China", "France", "Russia", "United Kingdom", "United States"], hint: "The 'P5' (5 nations)." },
+  { id: "q282", category: "1-5", question: "Name a standard US coin denomination currently minted that is less than 50 cents.", exampleAnswers: ["Penny", "Nickel", "Dime", "Quarter"], hint: "There are 4." },
+  { id: "q283", category: "1-5", question: "Name a base on a standard baseball diamond.", exampleAnswers: ["First Base", "Second Base", "Third Base", "Home Plate"], hint: "There are 4." },
+  { id: "q284", category: "1-5", question: "Name a main titular character in the sitcom Seinfeld.", exampleAnswers: ["Jerry", "George", "Elaine", "Kramer"], hint: "There are 4." },
+  { id: "q285", category: "1-5", question: "Name an original member of Marvel's Fantastic Four.", exampleAnswers: ["Mr. Fantastic (Reed Richards)", "Invisible Woman (Sue Storm)", "Human Torch (Johnny Storm)", "The Thing (Ben Grimm)"], hint: "There are exactly 4." },
+
+  // ─────────────────────────────────────────────
+  // 1-3 answers (Absolute sudden death)
+  // ─────────────────────────────────────────────
+  { id: "q286", category: "1-3", question: "Name a color of the pieces in a standard game of chess.", exampleAnswers: ["White", "Black"], hint: "There are 2." },
+  { id: "q287", category: "1-3", question: "Name a type of electrical current.", exampleAnswers: ["Alternating Current (AC)", "Direct Current (DC)"], hint: "There are 2." },
+  { id: "q288", category: "1-3", question: "Name a setting on a standard, non-dimming light switch.", exampleAnswers: ["On", "Off"], hint: "There are 2." },
+  { id: "q289", category: "1-3", question: "Name a standard axis in a 2D coordinate plane.", exampleAnswers: ["X", "Y"], hint: "There are 2." },
+  { id: "q290", category: "1-3", question: "Name a direction you can scroll using a standard computer mouse wheel.", exampleAnswers: ["Up", "Down"], hint: "There are 2 standard directions." }
 ];
 
 // Pick a random question from a specific category
