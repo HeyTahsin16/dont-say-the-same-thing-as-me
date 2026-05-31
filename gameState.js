@@ -47,6 +47,8 @@ class GameState {
     if (!this.players.has(userId)) {
       this.players.set(userId, { username, answer: null, active: true });
       this.history.set(userId, []);
+      // Track the highest number of players who ever joined this game
+      this.peakPlayerCount = (this.peakPlayerCount || 0) + 1;
     }
   }
 
