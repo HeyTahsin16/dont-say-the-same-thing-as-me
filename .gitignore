@@ -5,6 +5,7 @@ node_modules/
 .env
 
 # Leaderboard data — persisted on Railway volume, not in git
+data/
 leaderboard.json
 
 # OS junk
