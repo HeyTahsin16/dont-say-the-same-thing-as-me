@@ -181,11 +181,15 @@ function resultEmbed(game, question, aiAnswer, judgements, roundNum) {
     .setTimestamp();
 }
 
-function winnerEmbed(winner) {
+function winnerEmbed(winner, soloGame = false) {
   return new EmbedBuilder()
-    .setColor(Colors.Green)
-    .setTitle("🏆 We Have a Winner!")
-    .setDescription(`Congratulations **${winner.username}**! You are the last one standing!`)
+    .setColor(soloGame ? Colors.Grey : Colors.Green)
+    .setTitle(soloGame ? "🎮 Game Over — Solo Run" : "🏆 We Have a Winner!")
+    .setDescription(
+      soloGame
+        ? `**${winner.username}** was the only player — no win counted on the leaderboard.\nPlay with at least 2 people for it to count!`
+        : `Congratulations **${winner.username}**! You are the last one standing!`
+    )
     .setFooter({ text: "Use /startgame to play again • /leaderboard for rankings" })
     .setTimestamp();
 }
@@ -213,8 +217,10 @@ async function startRound(game, channel) {
 
     if (activePlayers.length === 1) {
       const winner = activePlayers[0];
-      recordWin(winner.id, winner.username);
-      await channel.send({ embeds: [winnerEmbed(winner)] });
+      if ((game.peakPlayerCount || 0) >= 2) {
+        recordWin(winner.id, winner.username);
+      }
+      await channel.send({ embeds: [winnerEmbed(winner, (game.peakPlayerCount || 0) < 2)] });
       endGame(channel.id);
       return;
     }
@@ -384,9 +390,12 @@ async function resolveRound(game, channel) {
 
   if (survivors.length === 1) {
     const winner = survivors[0];
-    recordWin(winner.id, winner.username);
+    const soloGame = (game.peakPlayerCount || 0) < 2;
+    if (!soloGame) {
+      recordWin(winner.id, winner.username);
+    }
     game.resultTimer = setTimeout(async () => {
-      await channel.send({ embeds: [winnerEmbed(winner)] });
+      await channel.send({ embeds: [winnerEmbed(winner, soloGame)] });
       endGame(channel.id);
     }, RESULT_DURATION_MS);
     return;
