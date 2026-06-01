@@ -65,12 +65,17 @@ const commands = [
         .setDescription("Gemini model name to switch to")
         .setRequired(true)
         .addChoices(
-          { name: "gemini-1.5-flash (default, fast)", value: "gemini-1.5-flash" },
-          { name: "gemini-1.5-flash-8b (lightest)", value: "gemini-1.5-flash-8b" },
-          { name: "gemini-1.5-pro (smarter, lower limit)", value: "gemini-1.5-pro" },
-          { name: "gemini-2.0-flash (newest fast)", value: "gemini-2.0-flash" },
-          { name: "gemini-2.0-flash-lite (lightest 2.0)", value: "gemini-2.0-flash-lite" },
-          { name: "gemini-2.5-flash-preview (best quality)", value: "gemini-2.5-flash-preview-05-20" },
+          // Gemini 3 series
+          { name: "Gemini 3.5 Flash — most capable, stable ⭐", value: "gemini-3.5-flash" },
+          { name: "Gemini 3 Flash — frontier performance, preview", value: "gemini-3-flash-preview" },
+          { name: "Gemini 3.1 Flash Lite — lightest Gemini 3, stable", value: "gemini-3.1-flash-lite" },
+          { name: "Gemini 3.1 Pro — most advanced, preview", value: "gemini-3.1-pro-preview" },
+          // Gemini 2.5 series
+          { name: "Gemini 2.5 Flash — best price-performance", value: "gemini-2.5-flash" },
+          { name: "Gemini 2.5 Pro — most capable 2.5", value: "gemini-2.5-pro" },
+          // Gemma 4 open models
+          { name: "Gemma 4 27B — open model", value: "gemma-4-27b-it" },
+          { name: "Gemma 4 31B — open model (largest)", value: "gemma-4-31b-it" },
         )
     ),
 
