@@ -64,7 +64,7 @@ function answersMatch(a, b) {
 }
 
 // ─── JUDGE ROUND ───────────────────────────────────────────────────────────────
-async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiAnswers = [], category = "" }) {
+async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiAnswers = [], category = "", forcedAiAnswer = null }) {
   if (!genAI) throw new Error("Gemini not initialized");
 
   const model = genAI.getGenerativeModel({ model: activeModel });
@@ -79,6 +79,11 @@ async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiA
     ? `\n== ANSWERS YOU HAVE ALREADY USED FOR THIS QUESTION — DO NOT REPEAT THESE ==\n[${previousAiAnswers.join(", ")}]\nThis question belongs to the "${category}" category, meaning it has roughly ${{"40+":40,"20-40":30,"10-20":15,"5-10":7,"1-5":3,"1-3":2}[category]??10} possible valid answers. You have used ${previousAiAnswers.length} so far — there are still plenty of fresh ones. Pick the next most well-known answer that is NOT in the list above.\n`
     : "";
 
+  // If a forced answer is provided, we override Job 1 entirely — the answer is already decided.
+  const forcedSection = forcedAiAnswer
+    ? `\n== YOUR ANSWER IS ALREADY DECIDED ==\nYour answer this round is: "${forcedAiAnswer}". Do NOT change it. Your only job is Rule 2 — judging player validity.\n`
+    : "";
+
   const prompt = `You are the AI host of "Don't Say The Same Thing As Me" — a Discord game inspired by bradyyourtutor on YouTube.
 
 == YOUR TWO JOBS THIS ROUND ==
@@ -90,7 +95,7 @@ async function judgeRound({ question, exampleAnswers, playerAnswers, previousAiA
 
 == EXAMPLE VALID ANSWERS (scope/style reference only — many more exist) ==
 [${exampleAnswers.join(", ")}]
-${avoidSection}
+${avoidSection}${forcedSection}
 == PLAYER ANSWERS ==
 ${playerSection || "  (no players answered)"}
 
