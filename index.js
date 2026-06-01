@@ -487,6 +487,57 @@ async function resolveRound(game, channel) {
       if (!forcedAiAnswer) {
         recordAiAnswer(question.id, aiAnswer);
       }
+
+      // ── Post-Gemini typo-collision check ────────────────────────────────────
+      // Gemini may have corrected typos (e.g. "refflex" → "reflex").
+      // Now check: does any corrected answer match another player's answer
+      // (raw or corrected)? If so, the LATER submitter loses — first come first served.
+      // Build a map of normalisedCorrectedAnswer -> first playerId who "owns" it
+      // in submission order (Map preserves insertion order).
+
+      // First, gather the effective (post-correction) answer for each passing player
+      const effectiveAnswers = new Map(); // playerId -> normalised effective answer
+      for (const [pid, j] of Object.entries(judgements)) {
+        if (!j.valid && j.pass === false) continue; // already invalid — skip
+        const raw       = playerAnswers[pid] || "";
+        const effective = (j.corrected || raw).trim().toLowerCase();
+        effectiveAnswers.set(pid, effective);
+      }
+
+      // Walk roundAnswers in insertion order (= submission order) to find collisions
+      const claimedAnswers = new Map(); // normalisedAnswer -> first playerId who said it
+      const typoCollisions = {}; // playerId -> judgement override
+
+      for (const [pid] of game.roundAnswers) {
+        // Only care about players who passed Gemini's validity check
+        if (!effectiveAnswers.has(pid)) continue;
+        const eff = effectiveAnswers.get(pid);
+
+        if (claimedAnswers.has(eff)) {
+          // Collision — this player is LATER, they lose
+          const firstPid  = claimedAnswers.get(eff);
+          const firstName = game.players.get(firstPid)?.username || firstPid;
+          const rawAnswer = playerAnswers[pid] || "";
+          const corrected = judgements[pid]?.corrected;
+
+          typoCollisions[pid] = {
+            pass: false,
+            reason: corrected
+              ? `Typo variant of "${corrected}" — ${firstName} already said that`
+              : `Same answer as ${firstName} who answered first`,
+            corrected: corrected || null,
+            matchesAI: false,
+            duplicateOf: firstName,
+          };
+        } else {
+          claimedAnswers.set(eff, pid);
+        }
+      }
+
+      // Apply typo collision overrides into judgements
+      for (const [pid, override] of Object.entries(typoCollisions)) {
+        judgements[pid] = override;
+      }
     } catch (err) {
       console.error("judgeRound error:", err);
     }
