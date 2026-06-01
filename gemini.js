@@ -3,15 +3,22 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 let genAI = null;
 
 const AVAILABLE_MODELS = [
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-  "gemini-1.5-pro",
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-2.5-flash-preview-05-20",
+  // ── Gemini 3 series ──────────────────────────────────────────────────────
+  "gemini-3.5-flash",              // Most capable, stable — best for judging
+  "gemini-3-flash-preview",        // Gemini 3 Flash preview
+  "gemini-3.1-flash-lite",         // Lightest Gemini 3, stable
+  "gemini-3.1-pro-preview",        // Most advanced, preview
+
+  // ── Gemini 2.5 series ────────────────────────────────────────────────────
+  "gemini-2.5-flash",              // Best price-performance 2.5
+  "gemini-2.5-pro",                // Most capable 2.5
+
+  // ── Gemma 4 (open models) ─────────────────────────────────────────────────
+  "gemma-4-27b-it",                // Gemma 4 27B instruction-tuned
+  "gemma-4-31b-it",                // Gemma 4 31B instruction-tuned
 ];
 
-let activeModel = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+let activeModel = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 
 function initGemini(apiKey) {
   genAI = new GoogleGenerativeAI(apiKey);
