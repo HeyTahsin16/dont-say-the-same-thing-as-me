@@ -138,13 +138,16 @@ Respond ONLY with raw JSON. No markdown, no backticks:
     // Now apply match detection ourselves — Gemini has no say in this
     const judgements = {};
     for (const [playerId, j] of Object.entries(rawJudgements)) {
-      const playerAns = playerAnswers[playerId] || "";
-      const isMatch = j.valid && answersMatch(playerAns, aiAnswer);
+      const playerAns  = playerAnswers[playerId] || "";
+      // If Gemini corrected a typo, match against the corrected form — not the raw one.
+      // e.g. raw="solae", corrected="Solar", aiAnswer="Solar" → should be a match.
+      const effectiveAns = j.corrected || playerAns;
+      const isMatch = j.valid && (answersMatch(effectiveAns, aiAnswer) || answersMatch(playerAns, aiAnswer));
 
       judgements[playerId] = {
         pass: j.valid && !isMatch,
         reason: isMatch
-          ? `Your answer "${playerAns}" matches the AI's answer "${aiAnswer}"`
+          ? `Your answer "${playerAns}"${j.corrected ? ` (corrected: "${j.corrected}")` : ""} matches the AI's answer "${aiAnswer}"`
           : (j.reason || (j.valid ? "Valid answer" : "Invalid answer")),
         corrected: j.corrected || null,
         matchesAI: isMatch,
