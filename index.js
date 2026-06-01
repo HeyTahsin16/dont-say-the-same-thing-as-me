@@ -19,6 +19,7 @@ const { createGame, getGame, endGame, ROUND_ONE_DURATION_MS, ROUND_DURATION_MS, 
 const { getQuestionByCategory, resolveCategory } = require("./questions");
 const { recordWin, getTopPlayers } = require("./leaderboard");
 const { getPreviousAnswers, recordAnswer: recordAiAnswer } = require("./aiHistory");
+const { recordPlayerAnswer, getTrappedPlayers, resetTrap } = require("./playerHistory");
 
 // ─── ENV CHECKS ────────────────────────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -413,25 +414,95 @@ async function resolveRound(game, channel) {
   let aiAnswer = "???";
   let judgements = {};
 
+  // ── Camping trap check ────────────────────────────────────────────────────
+  // Check if any player is using a repeated answer they've been caught camping on.
+  // If multiple campers are trapped with the same answer, they all get eliminated
+  // via the existing duplicate logic — no special case needed there.
+  // If campers are trapped with DIFFERENT answers, pick one trap at random to
+  // avoid the AI needing to say two answers at once.
+
+  let forcedAiAnswer = null;
+  const trappedPlayers = getTrappedPlayers(playerAnswers, question.id);
+
+  if (trappedPlayers.length > 0) {
+    // Group trapped players by their normalised answer
+    const trapGroups = new Map(); // normAnswer -> [{ userId, answer }]
+    for (const t of trappedPlayers) {
+      const key = t.answer.trim().toLowerCase();
+      if (!trapGroups.has(key)) trapGroups.set(key, []);
+      trapGroups.get(key).push(t);
+    }
+
+    const groupList = [...trapGroups.values()];
+
+    if (groupList.length === 1) {
+      // All trapped players used the same answer — use it as AI's forced answer
+      forcedAiAnswer = groupList[0][0].answer;
+    } else {
+      // Multiple different camping answers — pick one group randomly to trap
+      // (the others get off this round but will still be caught eventually)
+      const chosen = groupList[Math.floor(Math.random() * groupList.length)];
+      forcedAiAnswer = chosen[0].answer;
+    }
+
+    // Reset traps for players whose answer was chosen (they'll be re-armed next threshold)
+    for (const t of trappedPlayers) {
+      if (t.answer.trim().toLowerCase() === forcedAiAnswer.trim().toLowerCase()) {
+        resetTrap(t.userId, question.id, t.answer);
+      }
+    }
+
+    console.log(`[camping trap] Forcing AI answer to "${forcedAiAnswer}" to catch camper(s): ${trappedPlayers.map(t => t.userId).join(", ")}`);
+  }
+
   if (Object.keys(playerAnswers).length > 0) {
     try {
-      // Pull persistent AI answer history — passes category so exhaustion detection works
-      const previousAiAnswers = getPreviousAnswers(question.id, question.category);
+      if (forcedAiAnswer) {
+        // AI answer is forced — still ask Gemini to validate player answers,
+        // but override the aiAnswer it returns with our forced one
+        const result = await judgeRound({
+          question: question.question,
+          exampleAnswers: question.exampleAnswers,
+          playerAnswers,
+          previousAiAnswers: [],   // no need to avoid anything — answer is forced
+          category: question.category,
+          forcedAiAnswer,
+        });
+        aiAnswer = forcedAiAnswer; // always use the forced answer regardless of what Gemini says
+        judgements = result.judgements;
+      } else {
+        const previousAiAnswers = getPreviousAnswers(question.id, question.category);
+        const result = await judgeRound({
+          question: question.question,
+          exampleAnswers: question.exampleAnswers,
+          playerAnswers,
+          previousAiAnswers,
+          category: question.category,
+        });
+        aiAnswer = result.aiAnswer;
+        judgements = result.judgements;
+      }
 
-      const result = await judgeRound({
-        question: question.question,
-        exampleAnswers: question.exampleAnswers,
-        playerAnswers,
-        previousAiAnswers,
-        category: question.category,
-      });
-      aiAnswer = result.aiAnswer;
-      judgements = result.judgements;
-
-      // Persist this answer so future sessions know to avoid it (rolling cap)
-      recordAiAnswer(question.id, aiAnswer);
+      // Persist AI answer so future sessions know to avoid it (skip if forced)
+      if (!forcedAiAnswer) {
+        recordAiAnswer(question.id, aiAnswer);
+      }
     } catch (err) {
       console.error("judgeRound error:", err);
+    }
+  }
+
+  // ── Record survivors' answers for camping detection ───────────────────────
+  // Do this AFTER judging so we only track players who actually passed this round.
+  // Merge judgements with duplicate judgements first so we know who survived.
+  const mergedForTracking = { ...judgements, ...duplicateJudgements };
+  for (const p of activeBefore) {
+    const ans = game.roundAnswers.get(p.id);
+    if (!ans) continue;
+    const j = mergedForTracking[p.id];
+    // Only record if they passed (survived) — no point tracking eliminated campers
+    if (j && j.pass) {
+      recordPlayerAnswer(p.id, question.id, ans);
     }
   }
 
