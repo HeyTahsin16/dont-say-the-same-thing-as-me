@@ -12,7 +12,7 @@ A multiplayer word elimination game inspired by **bradyyourtutor**'s YouTube ser
 4. When time's up (or everyone answers early), the AI judges all answers:
    - ✅ **Safe** — correct answer that's different from the AI's
    - 💀 **Eliminated** — answer matches the AI's answer
-   - 🔁 **Eliminated** — same answer as another player (both out), including typo variants
+   - 🔁 **Eliminated** — same answer as another player, including typo variants
    - ❌ **Eliminated** — wrong, off-topic, or gibberish
    - 🚫 **Eliminated** (round 2+) — no answer given
 5. Results show for **10 seconds**, then the next round begins.
