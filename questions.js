@@ -200,6 +200,16 @@ const questions = [
   { id: "q192", category: "1-3", question: "Name a possible result of a standard chess game.", exampleAnswers: ["Win", "Loss", "Draw"], hint: "There are 3 outcomes." },
   { id: "q193", category: "1-3", question: "Name a direction you can scroll with a mouse wheel.", exampleAnswers: ["Up", "Down"], hint: "2 standard directions." },
   // ═══════════════════════════════════════════════
+  // General Trivia / Mixed Category (q300 - q308)
+  // ═══════════════════════════════════════════════
+
+  { id: "q194", category: "1-3", question: "Name an Abrahamic religion.", exampleAnswers: ["Islam", "Christianity", "Judaism"], hint: "Monotheistic faiths tracing their origins back to a specific ancient patriarch." },
+  { id: "q195", category: "5-10", question: "Name a prominent prophet in Abrahamic religions.", exampleAnswers: ["Muhammad", "Jesus", "Moses", "Abraham", "Noah"], hint: "Key historical messengers recognized across major monotheistic scriptures." },
+  { id: "q196", category: "1-5", question: "Name a major religious text or holy book.", exampleAnswers: ["Quran", "Bible", "Torah", "Vedas", "Tripitaka"], hint: "Foundational scriptures guiding the beliefs of world religions." },
+  { id: "q197", category: "5-10", question: "Name a major city in Japan.", exampleAnswers: ["Tokyo", "Kyoto", "Osaka", "Yokohama", "Sapporo"], hint: "Metropolitan hubs known for high-speed rail, shrines, or neon-lit streets." },
+  { id: "q198", category: "5-10", question: "Name a major city in China.", exampleAnswers: ["Beijing", "Shanghai", "Shenzhen", "Guangzhou", "Chengdu"], hint: "Massive urban centers powering the East Asian economy." },
+  { id: "q199", category: "5-10", question: "Name a major city in India.", exampleAnswers: ["Mumbai", "Delhi", "Kolkata", "Chennai", "Bangalore"], hint: "Huge, densely populated metropolises just across the border." },
+  // ═══════════════════════════════════════════════
   // HSC Syllabus Standard Extra Questions (q200 - q299)
   // ═══════════════════════════════════════════════
 
@@ -313,7 +323,10 @@ const questions = [
   { id: "q296", category: "5-10", question: "Name a primary case type (কারক) identified inside Bangla grammar rules.", exampleAnswers: ["Kortri", "Kormo", "Koron", "Shompordan", "Opadan", "Odhikoron"], hint: "Structural linkages indicating sentence actors, target results, operational tools, or situational settings." },
   { id: "q297", category: "5-10", question: "Name a fundamental Samas type (সমাস) formatting compound words in Bangla.", exampleAnswers: ["Dandva", "Dvigu", "Tatpurush", "Karmadharaya", "Bahuvrihi", "Avyayibhava"], hint: "Word structural compressions managing descriptive meanings, sums, or independent parameters." },
   { id: "q298", category: "1-3", question: "Name a core letter element trigger driving cerebral shifting under Natto/Sattho Bidhan rules.", exampleAnswers: ["Ri", "Rro", "Ssho"], hint: "Sanskrit roots mapping letters like ঋ, র, ষ that aggressively pull standard dental sounds into cerebrals." },
-  { id: "q299", category: "1-3", question: "Name a modifier classification based on its positional orientation to the headword.", exampleAnswers: ["Pre-modifier", "Post-modifier"], hint: "Adverbial/adjectival components nesting structural tags right before or after their targets." }
+  { id: "q299", category: "1-3", question: "Name a modifier classification based on its positional orientation to the headword.", exampleAnswers: ["Pre-modifier", "Post-modifier"], hint: "Adverbial/adjectival components nesting structural tags right before or after their targets." },
+  { id: "q300", category: "1-5", question: "Name an infamous historical serial killer.", exampleAnswers: ["Jack the Ripper", "Zodiac Killer", "Ted Bundy", "Jeffrey Dahmer"], hint: "Notorious true-crime figures who committed multiple sequential crimes." },
+  { id: "q301", category: "5-10", question: "Name a well-known delivery or courier service.", exampleAnswers: ["Pathao", "Foodpanda", "FedEx", "DHL", "RedX"], hint: "Companies that bring food, parcels, or tech orders straight to your location." },
+  { id: "q302", category: "5-10", question: "Name a popular Bangladeshi brand or company.", exampleAnswers: ["Walton", "Pran", "Aarong", "Star Tech", "Udvash", "bKash"], hint: "Local giants dominating tech retail, academics, food, or mobile banking." },
   
   // ═══════════════════════════════════════════════
   // NEW QUESTIONS — User requested batch
