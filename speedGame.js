@@ -225,7 +225,13 @@ async function resolveJoiningRound(game, channel) {
 
   await channel.send({ embeds: [joinResultEmbed(game, question, firstCorrect)] });
 
-  // Start phase 1 round 1 after 8 seconds
+  // If someone answered correctly in the joining round, count it as their phase win
+  // so they sit out the first competitive round (fair — they already proved themselves)
+  if (firstCorrect) {
+    game.phaseWinners.set(firstCorrect.id, { username: firstCorrect.username, wonRound: 0 });
+  }
+
+  // Start phase 1 competitive rounds after 8 seconds
   game.resultTimer = setTimeout(async () => {
     await startCompetitiveRound(game, channel);
   }, SPEED_RESULT_DURATION_MS);
@@ -305,19 +311,31 @@ async function resolveCompetitiveRound(game, channel, timedOut = false) {
   const eligible = game.getEligiblePlayers();
   const active   = game.getActivePlayers();
 
-  // Phase ends when only 1 eligible remains (the loser)
-  if (eligible.length === 1 && active.length > 1) {
+  // Phase ends when only 1 eligible remains (the loser) BUT only after
+  // every player has had at least one competitive round to answer.
+  // Minimum competitive rounds needed = number of active players - number of joining-round winners
+  // Simplified: we need at least (active.length - phaseWinners.size) competitive rounds played,
+  // which equals the number of players who started with no phase win.
+  // Easiest check: phaseRound must be >= eligible players at phase start (before any competitive rounds).
+  // We track this as: every non-joining-winner must have had a round.
+  // Since joining winners are stored with wonRound:0, the first competitive round is phaseRound:1.
+  // So minimum competitive rounds = active.length - joiningWinnerCount.
+  const joiningWinners = [...game.phaseWinners.values()].filter(w => w.wonRound === 0).length;
+  const minRoundsNeeded = active.length - joiningWinners;
+  const enoughRoundsPlayed = game.phaseRound >= minRoundsNeeded;
+
+  if (eligible.length === 1 && active.length > 1 && enoughRoundsPlayed) {
     game.resultTimer = setTimeout(() => resolvePhase(game, channel), SPEED_RESULT_DURATION_MS);
     return;
   }
 
-  // Phase ends if nobody is eligible (all won — edge case)
+  // Phase ends if nobody is eligible (all won — everyone had a round)
   if (eligible.length === 0) {
     game.resultTimer = setTimeout(() => resolvePhase(game, channel), SPEED_RESULT_DURATION_MS);
     return;
   }
 
-  // Continue
+  // Continue to next round
   game.resultTimer = setTimeout(() => startCompetitiveRound(game, channel), SPEED_RESULT_DURATION_MS);
 }
 
