@@ -77,6 +77,8 @@ function joinResultEmbed(game, question, firstCorrect) {
 
 function roundResultEmbed(game, question, winner, timedOut) {
   let desc;
+  const is2Player = game.getActivePlayers().length === 2;
+
   if (timedOut && !winner) {
     desc = `⏰ **Nobody answered in time!**\n\n**Correct answer:** \`${question.answer}\``;
   } else if (winner) {
@@ -90,15 +92,15 @@ function roundResultEmbed(game, question, winner, timedOut) {
   }
 
   const standings = [...game.phaseWinners.values()]
-    .map(w => `🏆 ${w.username} (round ${w.wonRound})`)
+    .map(w => `🏆 ${w.username} (round ${w.wonRound === 0 ? "joining" : w.wonRound})`)
     .join("\n") || "No winners yet this phase";
 
   return new EmbedBuilder()
     .setColor(winner ? Colors.Green : Colors.Orange)
     .setTitle(`📊 Round ${game.phaseRound} Result — Phase ${game.phaseNumber}`)
     .setDescription(desc)
-    .addFields({ name: "Phase standings", value: standings })
-    .setFooter({ text: "Next round in 8 seconds…" })
+    .addFields({ name: is2Player ? "Result" : "Phase standings", value: is2Player ? (winner ? `🏆 **${winner.username}** wins!` : "No winner") : standings })
+    .setFooter({ text: is2Player ? (winner ? "Game over!" : "No winner this round…") : "Next round in 8 seconds…" })
     .setTimestamp();
 }
 
@@ -311,15 +313,29 @@ async function resolveCompetitiveRound(game, channel, timedOut = false) {
   const eligible = game.getEligiblePlayers();
   const active   = game.getActivePlayers();
 
-  // Phase ends when only 1 eligible remains (the loser) BUT only after
-  // every player has had at least one competitive round to answer.
-  // Minimum competitive rounds needed = number of active players - number of joining-round winners
-  // Simplified: we need at least (active.length - phaseWinners.size) competitive rounds played,
-  // which equals the number of players who started with no phase win.
-  // Easiest check: phaseRound must be >= eligible players at phase start (before any competitive rounds).
-  // We track this as: every non-joining-winner must have had a round.
-  // Since joining winners are stored with wonRound:0, the first competitive round is phaseRound:1.
-  // So minimum competitive rounds = active.length - joiningWinnerCount.
+  // ── Special case: exactly 2 players ──────────────────────────────────────
+  // First correct answer in any competitive round = instant game winner.
+  // No phases needed — loser is the one who didn't answer.
+  if (active.length === 2) {
+    if (winner) {
+      // Winner answered correctly — they win the whole game
+      const soloGame = game.peakPlayerCount < 2;
+      if (!soloGame) recordWin(winner.id, winner.username);
+      game.resultTimer = setTimeout(async () => {
+        await channel.send({ embeds: [winnerEmbed(winner, soloGame)] });
+        endSpeedGame(channel.id);
+      }, SPEED_RESULT_DURATION_MS);
+    } else {
+      // Nobody answered — both out
+      game.resultTimer = setTimeout(async () => {
+        await channel.send({ embeds: [drawEmbed()] });
+        endSpeedGame(channel.id);
+      }, SPEED_RESULT_DURATION_MS);
+    }
+    return;
+  }
+
+  // ── 3+ players: normal phase logic ───────────────────────────────────────
   const joiningWinners = [...game.phaseWinners.values()].filter(w => w.wonRound === 0).length;
   const minRoundsNeeded = active.length - joiningWinners;
   const enoughRoundsPlayed = game.phaseRound >= minRoundsNeeded;
@@ -329,13 +345,11 @@ async function resolveCompetitiveRound(game, channel, timedOut = false) {
     return;
   }
 
-  // Phase ends if nobody is eligible (all won — everyone had a round)
   if (eligible.length === 0) {
     game.resultTimer = setTimeout(() => resolvePhase(game, channel), SPEED_RESULT_DURATION_MS);
     return;
   }
 
-  // Continue to next round
   game.resultTimer = setTimeout(() => startCompetitiveRound(game, channel), SPEED_RESULT_DURATION_MS);
 }
 
