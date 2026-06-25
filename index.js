@@ -21,7 +21,7 @@ const { recordWin, getTopPlayers } = require("./leaderboard");
 const { getPreviousAnswers, recordAnswer: recordAiAnswer } = require("./aiHistory");
 const { recordPlayerAnswer, getTrappedPlayers, resetTrap } = require("./playerHistory");
 const { createSpeedGame, getSpeedGame, endSpeedGame } = require("./speedGameState");
-const { startSpeedRound, handleSpeedMessage, handleSpeedSkip } = require("./speedGame");
+const { startJoiningRound, handleSpeedMessage, handleSpeedSkip } = require("./speedGame");
 
 // ─── ENV CHECKS ────────────────────────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -1026,7 +1026,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     });
 
     setTimeout(async () => {
-      await startSpeedRound(game, channel);
+      await startJoiningRound(game, channel);
     }, 5000);
   }
 
