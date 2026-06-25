@@ -1,8 +1,9 @@
 // In-memory speed game state per channel
 const games = new Map();
 
-const SPEED_ROUND_DURATION_MS  = 30_000;  // 30s per question
-const SPEED_RESULT_DURATION_MS = 8_000;   // 8s to show results before next round
+const SPEED_JOIN_DURATION_MS   = 60_000;  // 60s joining round
+const SPEED_ROUND_DURATION_MS  = 30_000;  // 30s for competitive rounds
+const SPEED_RESULT_DURATION_MS = 8_000;   // 8s to show results
 
 class SpeedGameState {
   constructor(channelId, guildId, startedBy, expectedPlayers) {
@@ -114,5 +115,5 @@ function endSpeedGame(channelId) {
 
 module.exports = {
   createSpeedGame, getSpeedGame, endSpeedGame,
-  SPEED_ROUND_DURATION_MS, SPEED_RESULT_DURATION_MS,
+  SPEED_JOIN_DURATION_MS, SPEED_ROUND_DURATION_MS, SPEED_RESULT_DURATION_MS,
 };
