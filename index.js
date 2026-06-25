@@ -20,6 +20,8 @@ const { getQuestionByCategory, resolveCategory } = require("./questions");
 const { recordWin, getTopPlayers } = require("./leaderboard");
 const { getPreviousAnswers, recordAnswer: recordAiAnswer } = require("./aiHistory");
 const { recordPlayerAnswer, getTrappedPlayers, resetTrap } = require("./playerHistory");
+const { createSpeedGame, getSpeedGame, endSpeedGame } = require("./speedGameState");
+const { startSpeedRound, handleSpeedMessage, handleSpeedSkip } = require("./speedGame");
 
 // ─── ENV CHECKS ────────────────────────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -78,6 +80,22 @@ const commands = [
           { name: "Gemma 4 31B — open model (largest)", value: "gemma-4-31b-it" },
         )
     ),
+
+  new SlashCommandBuilder()
+    .setName("startspeed")
+    .setDescription("Start a Speed Round game — first to answer each question wins the round!")
+    .addIntegerOption(opt =>
+      opt
+        .setName("players")
+        .setDescription("Expected players — first round ends early once all have joined (optional)")
+        .setMinValue(2)
+        .setMaxValue(200)
+        .setRequired(false)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("endspeed")
+    .setDescription("Force-end the current Speed Round game (starter or mod only)."),
 
   new SlashCommandBuilder()
     .setName("help")
@@ -637,6 +655,13 @@ async function resolveRound(game, channel) {
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
 
+  // ── Speed game handler ─────────────────────────────────────────────────────
+  const speedGame = getSpeedGame(message.channelId);
+  if (speedGame && speedGame.isActive()) {
+    await handleSpeedMessage(message, speedGame);
+    return; // speed game takes exclusive control of the channel
+  }
+
   const game = getGame(message.channelId);
   if (!game || game.phase !== "answering") return;
 
@@ -711,6 +736,14 @@ client.on(Events.MessageCreate, async (message) => {
 // ─── BUTTON HANDLER (skip votes) ───────────────────────────────────────────────
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
+
+  // ── Speed game skip ──
+  if (interaction.customId === "speed_skip") {
+    const speedGame = getSpeedGame(interaction.channelId);
+    if (speedGame) return handleSpeedSkip(interaction, speedGame);
+    return interaction.reply({ content: "No active speed round.", flags: 64 });
+  }
+
   if (interaction.customId !== "skip_question") return;
 
   const game = getGame(interaction.channelId);
@@ -946,11 +979,76 @@ client.on(Events.InteractionCreate, async (interaction) => {
             {
               name: "Commands",
               value:
-                "`/startgame` — Start a new game\n`/endgame` — Force-end (starter or mod only)\n`/leaderboard` — See top winners\n`/setmodel` — Switch Gemini model (owner only)\n`/help` — This message",
+                "`/startgame` — Start a new game\n`/endgame` — Force-end (starter or mod only)\n`/startspeed` — Start a Speed Round game\n`/endspeed` — Force-end speed round\n`/leaderboard` — See top winners\n`/setmodel` — Switch Gemini model (owner only)\n`/help` — This message",
             }
           ),
       ],
       flags: 64,
+    });
+  }
+
+  // ── /startspeed ──
+  else if (commandName === "startspeed") {
+    // Block if a speed game OR regular game is already running in this channel
+    if (getSpeedGame(channelId)?.isActive()) {
+      return interaction.reply({ content: "⚠️ A Speed Round game is already running! Use `/endspeed` to stop it.", flags: 64 });
+    }
+    if (getGame(channelId)?.isActive()) {
+      return interaction.reply({ content: "⚠️ A regular game is already running in this channel.", flags: 64 });
+    }
+
+    const expectedPlayers = interaction.options.getInteger("players") ?? null;
+    const game = createSpeedGame(channelId, interaction.guildId, user.id, expectedPlayers);
+
+    const playerNote = expectedPlayers
+      ? `⚡ Set for **${expectedPlayers} players** — round 1 ends as soon as all ${expectedPlayers} have joined!\n\n`
+      : "";
+
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Yellow)
+          .setTitle("⚡ Speed Round — Starting!")
+          .setDescription(
+            "**How to play:**\n" +
+            "• A question appears with **one correct answer** — type it as fast as you can!\n" +
+            "• **First person to answer correctly** wins that round\n" +
+            "• Round winners **cannot answer** the next round(s) of that phase\n" +
+            "• Once all but one player has won a round, the **one who didn't win** is eliminated\n" +
+            "• Then a new phase starts — eliminated players are gone forever\n" +
+            "• **Last one standing** wins the game! 🏆\n\n" +
+            "⚠️ Wrong answers are ignored — keep trying within the time limit!\n\n" +
+            playerNote +
+            "First question in **5 seconds…**"
+          )
+          .setFooter({ text: "Type your answer when the question appears!" }),
+      ],
+    });
+
+    setTimeout(async () => {
+      await startSpeedRound(game, channel);
+    }, 5000);
+  }
+
+  // ── /endspeed ──
+  else if (commandName === "endspeed") {
+    const speedGame = getSpeedGame(channelId);
+    if (!speedGame) {
+      return interaction.reply({ content: "❌ No Speed Round game is running right now.", flags: 64 });
+    }
+    const member = interaction.member;
+    const canEnd = speedGame.startedBy === user.id || member?.permissions?.has("ManageMessages");
+    if (!canEnd) {
+      return interaction.reply({ content: "❌ Only the game starter or a moderator can force-end the game.", flags: 64 });
+    }
+    endSpeedGame(channelId);
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Red)
+          .setTitle("🛑 Speed Round Ended")
+          .setDescription(`Game force-ended by ${user.username}.`),
+      ],
     });
   }
 });
