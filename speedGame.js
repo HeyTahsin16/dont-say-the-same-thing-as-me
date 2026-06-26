@@ -18,6 +18,7 @@ const { recordWin } = require("./leaderboard");
 // ─── EMBED HELPERS ─────────────────────────────────────────────────────────────
 
 function joiningEmbed(game, question, timerSecs) {
+  const joined = [...game.players.values()].map(p => p.username);
   return {
     embeds: [
       new EmbedBuilder()
@@ -26,8 +27,8 @@ function joiningEmbed(game, question, timerSecs) {
         .setDescription(
           `**Question:** ${question.question}\n\n` +
           `📝 **Type any answer to join the game!** You have **${timerSecs} seconds**.\n` +
-          `The first person to type the correct answer also scores a bonus point for this round.\n\n` +
-          `👥 **Players joined so far:** ${game.players.size > 0 ? [...game.players.values()].map(p => p.username).join(", ") : "none yet"}`
+          `First person to type the correct answer also gets a ⭐ bonus!\n\n` +
+          `👥 **Players joined:** ${joined.length > 0 ? joined.join(", ") : "none yet"}`
         )
         .setFooter({ text: `${timerSecs}s to join • Anyone who types becomes a player` })
         .setTimestamp(),
@@ -37,9 +38,10 @@ function joiningEmbed(game, question, timerSecs) {
 }
 
 function competitiveEmbed(game, question) {
-  const eligible = game.getEligiblePlayers();
-  const winners  = [...game.phaseWinners.values()].map(w => w.username);
+  const eligible  = game.getEligiblePlayers();
+  const winners   = [...game.phaseWinners.values()].map(w => w.username);
   const timerSecs = SPEED_ROUND_DURATION_MS / 1000;
+  const is2p      = game.getActivePlayers().length === 2;
 
   const embed = new EmbedBuilder()
     .setColor(Colors.Blue)
@@ -47,7 +49,7 @@ function competitiveEmbed(game, question) {
     .setDescription(
       `**${question.question}**\n\n` +
       `⏱️ **${timerSecs} seconds** — first correct answer wins the round!\n\n` +
-      (winners.length > 0 ? `🏆 **Won this phase:** ${winners.join(", ")}\n` : ``) +
+      (winners.length > 0 && !is2p ? `🏆 **Won this phase:** ${winners.join(", ")}\n` : ``) +
       `👥 **Competing:** ${eligible.map(p => p.username).join(", ") || "nobody"}`
     )
     .setFooter({ text: `Round ${game.phaseRound} • Phase ${game.phaseNumber}` })
@@ -68,7 +70,7 @@ function joinResultEmbed(game, question, firstCorrect) {
     .setTitle("✅ Joining Phase Over!")
     .setDescription(
       `**Answer:** \`${question.answer}\`\n\n` +
-      (firstCorrect ? `🏅 **First correct answer:** ${firstCorrect.username}\n\n` : ``) +
+      (firstCorrect ? `⭐ **First correct answer:** ${firstCorrect.username}\n\n` : ``) +
       `**Players in this game (${players.length}):** ${players.map(p => p.username).join(", ")}\n\n` +
       `First competitive round starts in 8 seconds!`
     )
@@ -76,8 +78,8 @@ function joinResultEmbed(game, question, firstCorrect) {
 }
 
 function roundResultEmbed(game, question, winner, timedOut) {
+  const is2p = game.getActivePlayers().length === 2;
   let desc;
-  const is2Player = game.getActivePlayers().length === 2;
 
   if (timedOut && !winner) {
     desc = `⏰ **Nobody answered in time!**\n\n**Correct answer:** \`${question.answer}\``;
@@ -91,16 +93,16 @@ function roundResultEmbed(game, question, winner, timedOut) {
     desc = `No one answered.\n\n**Correct answer:** \`${question.answer}\``;
   }
 
-  const standings = [...game.phaseWinners.values()]
-    .map(w => `🏆 ${w.username} (round ${w.wonRound === 0 ? "joining" : w.wonRound})`)
-    .join("\n") || "No winners yet this phase";
+  const standingsValue = is2p
+    ? (winner ? `🏆 **${winner.username}** wins the game!` : "No winner this round — next question soon…")
+    : ([...game.phaseWinners.values()].map(w => `🏆 ${w.username} (round ${w.wonRound === 0 ? "joining" : w.wonRound})`).join("\n") || "No winners yet");
 
   return new EmbedBuilder()
     .setColor(winner ? Colors.Green : Colors.Orange)
     .setTitle(`📊 Round ${game.phaseRound} Result — Phase ${game.phaseNumber}`)
     .setDescription(desc)
-    .addFields({ name: is2Player ? "Result" : "Phase standings", value: is2Player ? (winner ? `🏆 **${winner.username}** wins!` : "No winner") : standings })
-    .setFooter({ text: is2Player ? (winner ? "Game over!" : "No winner this round…") : "Next round in 8 seconds…" })
+    .addFields({ name: is2p ? "Result" : "Phase standings", value: standingsValue })
+    .setFooter({ text: is2p ? (winner ? "Game over!" : "No winner this round…") : "Next round in 8 seconds…" })
     .setTimestamp();
 }
 
@@ -112,7 +114,7 @@ function phaseEndEmbed(game, losers) {
     .setTitle(`💀 Phase ${game.phaseNumber} Complete!`)
     .setDescription(
       `**Eliminated:** ${names}\n` +
-      `(${losers.length > 1 ? "they" : "they"} couldn't win a single round this phase)\n\n` +
+      `(couldn't win a single round this phase)\n\n` +
       `**Still standing:** ${remaining.map(p => p.username).join(", ") || "Nobody"}`
     )
     .setFooter({ text: remaining.length > 1 ? `Phase ${game.phaseNumber + 1} starting soon…` : "" })
@@ -135,8 +137,8 @@ function winnerEmbed(winner, soloGame) {
 function drawEmbed() {
   return new EmbedBuilder()
     .setColor(Colors.DarkRed)
-    .setTitle("💀 Everyone's Out!")
-    .setDescription("No one could answer — game over with no winner.")
+    .setTitle("💀 No Winner!")
+    .setDescription("Nobody could answer — game over with no winner.")
     .setFooter({ text: "Use /startspeed to try again" })
     .setTimestamp();
 }
@@ -156,33 +158,29 @@ async function disableSkipButton(game) {
   } catch { /* ignore */ }
 }
 
-function checkWinCondition(game) {
-  const active = game.getActivePlayers();
-  if (active.length === 0) return "draw";
-  if (active.length === 1) return "winner";
-  return null;
+async function declareWinner(game, channel, winner) {
+  const soloGame = game.peakPlayerCount < 2;
+  if (!soloGame) recordWin(winner.id, winner.username);
+  await channel.send({ embeds: [winnerEmbed(winner, soloGame)] });
+  endSpeedGame(channel.id);
 }
 
 // ─── JOINING ROUND ─────────────────────────────────────────────────────────────
-// Round 1 only: collects players, no elimination, no phase winner declared.
-// Anyone who types any message becomes a player.
-// If someone answers correctly first, they get a flag but it doesn't end the round.
-// Round ends when: timer expires OR expected player count reached.
 
 async function startJoiningRound(game, channel) {
   const question = getRandomSpeedQuestion(game.usedQuestionIds);
   if (!question) {
-    await channel.send("⚠️ No questions available! Game over.");
+    await channel.send("⚠️ No questions available!");
     endSpeedGame(channel.id);
     return;
   }
 
   game.usedQuestionIds.add(question.id);
-  game.currentQuestion  = question;
+  game.currentQuestion = question;
   game.roundAnswers.clear();
-  game.roundWinner      = null; // first correct answer in joining round (bonus only)
-  game.phase            = "joining";
-  game.roundNumber      = 1;
+  game.roundWinner     = null;
+  game.phase           = "joining";
+  game.roundNumber     = 0;
   game.skipVotes.clear();
 
   const timerSecs = SPEED_JOIN_DURATION_MS / 1000;
@@ -198,26 +196,23 @@ async function resolveJoiningRound(game, channel) {
   game.phase = "result";
 
   clearTimeout(game.roundTimer);
-  // Disable skip button (no skip in joining round but just in case)
   await disableSkipButton(game);
 
-  const question    = game.currentQuestion;
+  const question     = game.currentQuestion;
   const firstCorrect = game.roundWinner
     ? { id: game.roundWinner, username: game.players.get(game.roundWinner)?.username }
     : null;
 
-  // Need at least 2 players to play
-  const playerCount = game.players.size;
-  if (playerCount < 2) {
+  if (game.players.size < 2) {
     await channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(Colors.Red)
           .setTitle("❌ Not Enough Players")
           .setDescription(
-            playerCount === 0
+            game.players.size === 0
               ? "Nobody joined! Use `/startspeed` to try again."
-              : "Only 1 player joined — need at least 2 to play!"
+              : "Only 1 player joined — need at least 2!"
           ),
       ],
     });
@@ -227,13 +222,10 @@ async function resolveJoiningRound(game, channel) {
 
   await channel.send({ embeds: [joinResultEmbed(game, question, firstCorrect)] });
 
-  // If someone answered correctly in the joining round, count it as their phase win
-  // so they sit out the first competitive round (fair — they already proved themselves)
-  if (firstCorrect) {
-    game.phaseWinners.set(firstCorrect.id, { username: firstCorrect.username, wonRound: 0 });
-  }
+  // NOTE: joining round winner is stored in game.joiningWinner (NOT phaseWinners)
+  // so they still compete in competitive rounds. The ⭐ is purely cosmetic recognition.
+  game.joiningWinner = firstCorrect?.id || null;
 
-  // Start phase 1 competitive rounds after 8 seconds
   game.resultTimer = setTimeout(async () => {
     await startCompetitiveRound(game, channel);
   }, SPEED_RESULT_DURATION_MS);
@@ -245,32 +237,26 @@ async function startCompetitiveRound(game, channel) {
   const active   = game.getActivePlayers();
   const eligible = game.getEligiblePlayers();
 
-  // Win/draw check
-  const condition = checkWinCondition(game);
-  if (condition === "winner") {
-    const winner   = active[0];
-    const soloGame = game.peakPlayerCount < 2;
-    if (!soloGame) recordWin(winner.id, winner.username);
-    await channel.send({ embeds: [winnerEmbed(winner, soloGame)] });
-    endSpeedGame(channel.id);
-    return;
-  }
-  if (condition === "draw") {
+  // Overall win/draw check (after phase eliminations)
+  if (active.length === 0) {
     await channel.send({ embeds: [drawEmbed()] });
     endSpeedGame(channel.id);
     return;
   }
+  if (active.length === 1) {
+    await declareWinner(game, channel, active[0]);
+    return;
+  }
 
-  // Phase complete: all but one have won a round
+  // Phase complete: nobody left to compete
   if (eligible.length === 0) {
     await resolvePhase(game, channel);
     return;
   }
 
-  // Pick question
   const question = getRandomSpeedQuestion(game.usedQuestionIds);
   if (!question) {
-    await channel.send("⚠️ Ran out of questions! Game over.");
+    await channel.send("⚠️ Ran out of questions!");
     endSpeedGame(channel.id);
     return;
   }
@@ -303,7 +289,29 @@ async function resolveCompetitiveRound(game, channel, timedOut = false) {
     ? { id: game.roundWinner, username: game.players.get(game.roundWinner)?.username || game.roundWinner }
     : null;
 
-  // Record phase winner
+  const active = game.getActivePlayers();
+
+  // ── 2-PLAYER SPECIAL CASE ────────────────────────────────────────────────
+  // With exactly 2 players, ignore phase system entirely.
+  // Winner = first correct answer. No winner = next round. Simple.
+  if (active.length === 2) {
+    await channel.send({ embeds: [roundResultEmbed(game, question, winner, timedOut)] });
+
+    if (winner) {
+      // One player answered correctly — they win the whole game
+      game.resultTimer = setTimeout(async () => {
+        await declareWinner(game, channel, winner);
+      }, SPEED_RESULT_DURATION_MS);
+    } else {
+      // Nobody answered — continue to next round
+      game.resultTimer = setTimeout(async () => {
+        await startCompetitiveRound(game, channel);
+      }, SPEED_RESULT_DURATION_MS);
+    }
+    return;
+  }
+
+  // ── 3+ PLAYERS: PHASE SYSTEM ─────────────────────────────────────────────
   if (winner) {
     game.phaseWinners.set(winner.id, { username: winner.username, wonRound: game.phaseRound });
   }
@@ -311,41 +319,14 @@ async function resolveCompetitiveRound(game, channel, timedOut = false) {
   await channel.send({ embeds: [roundResultEmbed(game, question, winner, timedOut)] });
 
   const eligible = game.getEligiblePlayers();
-  const active   = game.getActivePlayers();
 
-  // ── Special case: exactly 2 players ──────────────────────────────────────
-  // First correct answer in any competitive round = instant game winner.
-  // No phases needed — loser is the one who didn't answer.
-  if (active.length === 2) {
-    if (winner) {
-      // Winner answered correctly — they win the whole game
-      const soloGame = game.peakPlayerCount < 2;
-      if (!soloGame) recordWin(winner.id, winner.username);
-      game.resultTimer = setTimeout(async () => {
-        await channel.send({ embeds: [winnerEmbed(winner, soloGame)] });
-        endSpeedGame(channel.id);
-      }, SPEED_RESULT_DURATION_MS);
-    } else {
-      // Nobody answered — both out
-      game.resultTimer = setTimeout(async () => {
-        await channel.send({ embeds: [drawEmbed()] });
-        endSpeedGame(channel.id);
-      }, SPEED_RESULT_DURATION_MS);
-    }
-    return;
-  }
+  // Phase ends when only 1 eligible player remains — they're the loser
+  // But only after everyone has had at least one round (phaseRound >= active.length - phaseWinners + 1)
+  // Simplified: phase ends when eligible === 1 AND phaseRound >= (active.length - 1)
+  const minRoundsForPhase = active.length - 1;
+  const phaseCanEnd = game.phaseRound >= minRoundsForPhase;
 
-  // ── 3+ players: normal phase logic ───────────────────────────────────────
-  const joiningWinners = [...game.phaseWinners.values()].filter(w => w.wonRound === 0).length;
-  const minRoundsNeeded = active.length - joiningWinners;
-  const enoughRoundsPlayed = game.phaseRound >= minRoundsNeeded;
-
-  if (eligible.length === 1 && active.length > 1 && enoughRoundsPlayed) {
-    game.resultTimer = setTimeout(() => resolvePhase(game, channel), SPEED_RESULT_DURATION_MS);
-    return;
-  }
-
-  if (eligible.length === 0) {
+  if ((eligible.length === 1 && phaseCanEnd) || eligible.length === 0) {
     game.resultTimer = setTimeout(() => resolvePhase(game, channel), SPEED_RESULT_DURATION_MS);
     return;
   }
@@ -357,32 +338,23 @@ async function resolvePhase(game, channel) {
   const active = game.getActivePlayers();
   const losers = active.filter(p => !game.phaseWinners.has(p.id));
 
-  // Eliminate all losers
   for (const loser of losers) game.eliminatePlayer(loser.id);
 
   await channel.send({ embeds: [phaseEndEmbed(game, losers.length > 0 ? losers : active)] });
 
   const remaining = game.getActivePlayers();
 
-  if (remaining.length <= 1) {
-    game.resultTimer = setTimeout(async () => {
-      if (remaining.length === 1) {
-        const soloGame = game.peakPlayerCount < 2;
-        if (!soloGame) recordWin(remaining[0].id, remaining[0].username);
-        await channel.send({ embeds: [winnerEmbed(remaining[0], soloGame)] });
-      } else {
-        await channel.send({ embeds: [drawEmbed()] });
-      }
-      endSpeedGame(channel.id);
-    }, SPEED_RESULT_DURATION_MS);
-    return;
-  }
-
-  // Next phase
-  game.startNewPhase();
   game.resultTimer = setTimeout(async () => {
-    await channel.send(`🔄 **Phase ${game.phaseNumber} begins!** ${remaining.map(p => p.username).join(", ")} are still in.`);
-    await startCompetitiveRound(game, channel);
+    if (remaining.length === 0) {
+      await channel.send({ embeds: [drawEmbed()] });
+      endSpeedGame(channel.id);
+    } else if (remaining.length === 1) {
+      await declareWinner(game, channel, remaining[0]);
+    } else {
+      game.startNewPhase();
+      await channel.send(`🔄 **Phase ${game.phaseNumber} begins!** ${remaining.map(p => p.username).join(", ")} are still in.`);
+      await startCompetitiveRound(game, channel);
+    }
   }, SPEED_RESULT_DURATION_MS);
 }
 
@@ -396,25 +368,20 @@ async function handleSpeedMessage(message, game) {
 
   // ── JOINING ROUND ────────────────────────────────────────────────────────
   if (game.phase === "joining") {
-    // Register player
     const isNew = !game.players.has(userId);
     game.addPlayer(userId, username);
 
-    // Check correctness — but never end the round early because of this
-    if (!game.roundWinner) {
-      const correct = checkAnswer(game.currentQuestion, content);
-      if (correct) {
-        game.roundWinner = userId;
-        await message.react("⭐");
-        await message.channel.send(`⭐ **${username}** answered correctly first in the joining round!`);
-      } else {
-        await message.react(isNew ? "📝" : "❌");
-      }
+    const correct = !game.roundWinner && checkAnswer(game.currentQuestion, content);
+
+    if (correct) {
+      game.roundWinner = userId;
+      await message.react("⭐");
+      await message.channel.send(`⭐ **${username}** answered correctly first in the joining round!`);
     } else {
       await message.react(isNew ? "📝" : "💬");
     }
 
-    // Update join count on embed — edit with fresh player list
+    // Update embed with latest player list
     try {
       const timerSecs = SPEED_JOIN_DURATION_MS / 1000;
       if (game.questionMessage) {
@@ -434,14 +401,13 @@ async function handleSpeedMessage(message, game) {
   // ── COMPETITIVE ROUND ────────────────────────────────────────────────────
   if (game.phase !== "answering") return;
 
-  // Must be an active registered player
   const player = game.players.get(userId);
   if (!player || !player.active) return;
 
-  // Phase winners sit out
-  if (game.phaseWinners.has(userId)) return;
+  // In 3+ player mode, phase winners sit out. In 2-player mode, everyone competes.
+  const active = game.getActivePlayers();
+  if (active.length > 2 && game.phaseWinners.has(userId)) return;
 
-  // Already attempted
   if (game.roundAnswers.has(userId)) return;
 
   game.roundAnswers.set(userId, { answer: content, timestamp: Date.now() });
@@ -449,7 +415,6 @@ async function handleSpeedMessage(message, game) {
   const correct = checkAnswer(game.currentQuestion, content);
 
   if (correct && !game.roundWinner) {
-    // Winner — end round immediately
     game.roundWinner = userId;
     clearTimeout(game.roundTimer);
     await message.react("✅");
@@ -471,8 +436,9 @@ async function handleSpeedSkip(interaction, game) {
 
   const userId   = interaction.user.id;
   const eligible = game.getEligiblePlayers();
+
   if (!eligible.some(p => p.id === userId)) {
-    return interaction.reply({ content: "❌ Only active eligible players can vote to skip.", flags: 64 });
+    return interaction.reply({ content: "❌ Only active competing players can vote to skip.", flags: 64 });
   }
   if (game.skipUsedRounds.has(game.roundNumber)) {
     return interaction.reply({ content: "❌ Skip already used this round.", flags: 64 });
@@ -482,9 +448,9 @@ async function handleSpeedSkip(interaction, game) {
   }
 
   game.skipVotes.add(userId);
-  const needed    = Math.ceil(eligible.length / 2);
-  const current   = game.skipVotes.size;
-  const left      = needed - current;
+  const needed = Math.ceil(eligible.length / 2);
+  const current = game.skipVotes.size;
+  const left    = needed - current;
 
   await interaction.reply({
     content: `⏭️ **${interaction.user.username}** voted to skip! (${current}/${needed}${left > 0 ? ` — ${left} more` : ""})`,
