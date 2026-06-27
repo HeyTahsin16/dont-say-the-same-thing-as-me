@@ -257,10 +257,10 @@ async function resolveQuestion(game, channel) {
 
   await channel.send({ embeds: [resultEmbed(game, question, roundWinner, orderedAnswers)] });
 
-  // Eliminate: wrong answer OR no answer
-  const correctIds = new Set(orderedAnswers.filter(a => a.correct).map(a => a.userId));
+  // Eliminate everyone except the round winner
+  // Late correct answers don't save you — only first correct counts
   for (const p of active) {
-    if (!correctIds.has(p.id)) {
+    if (!roundWinner || p.id !== roundWinner.id) {
       game.eliminatePlayer(p.id);
     }
   }
