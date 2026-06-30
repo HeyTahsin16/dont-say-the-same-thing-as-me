@@ -18,31 +18,29 @@ class SpeedGameState {
     // All players who have ever joined: userId -> { username, active: bool }
     this.players = new Map();
 
-    // Current phase tracking
-    // A "phase" = one cycle where eliminated players are determined
-    this.phaseNumber   = 1;
-    this.roundNumber   = 0;   // overall round counter (for display)
-    this.phaseRound    = 0;   // round within this phase
+    // ── Phase system ──────────────────────────────────────────────────────────
+    // A "phase" = one elimination cycle. Within a phase, every player gets a
+    // chance to win a round. First correct answer in a round wins it — that
+    // player sits out for the REST of the phase (locked in as safe).
+    // This repeats until only ONE eligible player remains (hasn't won yet) —
+    // that player is eliminated, and a new phase begins with the survivors.
+    this.phaseNumber = 1;
+    this.phaseRound  = 0;     // round number within the current phase
+    this.roundNumber = 0;     // overall round counter across all phases (for display)
 
-    // Within a phase, track who has already WON a round (cannot answer)
-    // playerId -> { username, wonRound: number }
+    // playerId -> { username, wonRound: number } — winners THIS phase, locked out
     this.phaseWinners = new Map();
 
-    // The player who was eliminated this phase (last one without a win)
-    this.eliminated = null;
-
     // Current question
-    this.currentQuestion  = null;
-    this.usedQuestionIds  = new Set();
+    this.currentQuestion = null;
+    this.usedQuestionIds = new Set();
 
-    // Who answered this round and when: playerId -> { answer, timestamp }
+    // Answers submitted this round: playerId -> { answer, timestamp }
     this.roundAnswers = new Map();
-
-    // The winner of this round (first correct answerer)
-    this.roundWinner = null;
 
     // Question message (for disabling skip button)
     this.questionMessage = null;
+    this.lobbyMessage    = null;
 
     // Skip votes
     this.skipVotes      = new Set();
@@ -80,12 +78,11 @@ class SpeedGameState {
     }
   }
 
-  // Start a new phase: clear phase winners, bump phase number
+  // Start a new phase: clear phase winners, bump phase number, reset round counter
   startNewPhase() {
     this.phaseNumber++;
     this.phaseWinners.clear();
     this.phaseRound = 0;
-    this.eliminated = null;
   }
 
   isActive() {
