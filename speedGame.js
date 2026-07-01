@@ -288,16 +288,31 @@ async function resolveQuestion(game, channel, timedOut = false) {
 
   await channel.send({ embeds: [roundResultEmbed(game, question, winner, attempts)] });
 
-  const eligible = game.getEligiblePlayers();
   const active   = game.getActivePlayers();
+  const eligible = game.getEligiblePlayers();
 
-  // Phase complete: only one eligible player left (or none) — resolve phase
-  if (eligible.length <= 1 && active.length > 1) {
+  // ── Overall win check ─────────────────────────────────────────────────────
+  if (active.length === 0) {
+    game.resultTimer = setTimeout(async () => {
+      await channel.send({ embeds: [drawEmbed()] });
+      endSpeedGame(channel.id);
+    }, SPEED_RESULT_DURATION_MS);
+    return;
+  }
+  if (active.length === 1) {
+    game.resultTimer = setTimeout(async () => {
+      await declareWinner(game, channel, active[0]);
+    }, SPEED_RESULT_DURATION_MS);
+    return;
+  }
+
+  // ── Phase complete: only one or zero eligible players remain ──────────────
+  if (eligible.length <= 1) {
     game.resultTimer = setTimeout(() => resolvePhaseComplete(game, channel), SPEED_RESULT_DURATION_MS);
     return;
   }
 
-  // Still more eligible players — keep going within this phase
+  // Still more eligible players — continue this phase
   game.resultTimer = setTimeout(() => startQuestion(game, channel), SPEED_RESULT_DURATION_MS);
 }
 
@@ -386,15 +401,25 @@ async function handleSpeedMessage(message, game) {
   const correct = checkAnswer(game.currentQuestion, content);
 
   if (correct && !hasWinnerThisRound(game)) {
-    // This is the first correct answer this round — resolve immediately
+    // First correct answer — resolve immediately
     await message.react("✅");
     await message.channel.send(`✅ **${username}** got it first! Safe for this phase!`);
     clearTimeout(game.roundTimer);
     await resolveQuestion(game, message.channel, false);
   } else if (correct) {
-    await message.react("🥈"); // correct but someone already won
+    await message.react("🥈");
   } else {
-    await message.react("💬"); // wrong — no penalty mid-phase
+    await message.react("💬");
+  }
+
+  // Early resolve: all eligible players have now answered
+  if (game.phase === "answering") {
+    const eligible  = game.getEligiblePlayers();
+    const answered  = eligible.filter(p => game.roundAnswers.has(p.id));
+    if (answered.length >= eligible.length && eligible.length > 0) {
+      clearTimeout(game.roundTimer);
+      await resolveQuestion(game, message.channel, false);
+    }
   }
 }
 
