@@ -99,7 +99,7 @@ function roundResultEmbed(game, question, winner, attempts) {
       name: "🛡️ Safe this phase",
       value: [...game.phaseWinners.values()].map(w => w.username).join(", ") || "Nobody yet",
     })
-    .setFooter({ text: "Next round in 8 seconds…" })
+    .setFooter({ text: game.getEligiblePlayers().length <= 1 ? "Wrapping up…" : "Next round in 8 seconds…" })
     .setTimestamp();
 }
 
@@ -291,7 +291,7 @@ async function resolveQuestion(game, channel, timedOut = false) {
   const active   = game.getActivePlayers();
   const eligible = game.getEligiblePlayers();
 
-  // ── Overall win check ─────────────────────────────────────────────────────
+  // ── Overall win check (must come before phase check) ─────────────────────
   if (active.length === 0) {
     game.resultTimer = setTimeout(async () => {
       await channel.send({ embeds: [drawEmbed()] });
@@ -299,16 +299,31 @@ async function resolveQuestion(game, channel, timedOut = false) {
     }, SPEED_RESULT_DURATION_MS);
     return;
   }
-  if (active.length === 1) {
-    game.resultTimer = setTimeout(async () => {
-      await declareWinner(game, channel, active[0]);
-    }, SPEED_RESULT_DURATION_MS);
-    return;
-  }
 
-  // ── Phase complete: only one or zero eligible players remain ──────────────
+  // ── Phase complete: only 1 or 0 eligible players remain ──────────────────
   if (eligible.length <= 1) {
-    game.resultTimer = setTimeout(() => resolvePhaseComplete(game, channel), SPEED_RESULT_DURATION_MS);
+    // Find who never won this phase — eliminate them
+    const loser = eligible[0] || null;
+    if (loser) game.eliminatePlayer(loser.id);
+
+    const remaining = game.getActivePlayers();
+
+    if (loser) {
+      await channel.send({ embeds: [phaseEndEmbed(game, loser)] });
+    }
+
+    game.resultTimer = setTimeout(async () => {
+      if (remaining.length === 0) {
+        await channel.send({ embeds: [drawEmbed()] });
+        endSpeedGame(channel.id);
+      } else if (remaining.length === 1) {
+        await declareWinner(game, channel, remaining[0]);
+      } else {
+        game.startNewPhase();
+        await channel.send(`🔄 **Phase ${game.phaseNumber} begins!** ${remaining.map(p => p.username).join(", ")} are still in.`);
+        await startQuestion(game, channel);
+      }
+    }, SPEED_RESULT_DURATION_MS);
     return;
   }
 
