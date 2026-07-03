@@ -302,7 +302,6 @@ async function resolveQuestion(game, channel, timedOut = false) {
 
   // ── Phase complete: only 1 or 0 eligible players remain ──────────────────
   if (eligible.length <= 1) {
-    // Find who never won this phase — eliminate them
     const loser = eligible[0] || null;
     if (loser) game.eliminatePlayer(loser.id);
 
@@ -312,18 +311,21 @@ async function resolveQuestion(game, channel, timedOut = false) {
       await channel.send({ embeds: [phaseEndEmbed(game, loser)] });
     }
 
-    game.resultTimer = setTimeout(async () => {
-      if (remaining.length === 0) {
-        await channel.send({ embeds: [drawEmbed()] });
-        endSpeedGame(channel.id);
-      } else if (remaining.length === 1) {
-        await declareWinner(game, channel, remaining[0]);
-      } else {
-        game.startNewPhase();
-        await channel.send(`🔄 **Phase ${game.phaseNumber} begins!** ${remaining.map(p => p.username).join(", ")} are still in.`);
-        await startQuestion(game, channel);
-      }
-    }, SPEED_RESULT_DURATION_MS);
+    // Use a plain sleep so resultTimer can't be overwritten
+    await new Promise(res => setTimeout(res, SPEED_RESULT_DURATION_MS));
+
+    if (!game.isActive()) return; // game was force-ended during the wait
+
+    if (remaining.length === 0) {
+      await channel.send({ embeds: [drawEmbed()] });
+      endSpeedGame(channel.id);
+    } else if (remaining.length === 1) {
+      await declareWinner(game, channel, remaining[0]);
+    } else {
+      game.startNewPhase();
+      await channel.send(`🔄 **Phase ${game.phaseNumber} begins!** ${remaining.map(p => p.username).join(", ")} are still in.`);
+      await startQuestion(game, channel);
+    }
     return;
   }
 
