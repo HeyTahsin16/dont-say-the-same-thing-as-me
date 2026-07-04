@@ -105,6 +105,10 @@ function roundResultEmbed(game, question, winner, attempts) {
 
 function phaseEndEmbed(game, eliminated) {
   const remaining = game.getActivePlayers();
+  const nextText  = remaining.length > 1
+    ? `Phase ${game.phaseNumber + 1} starting soon…`
+    : `🏆 Winner incoming!`;
+
   return new EmbedBuilder()
     .setColor(Colors.Red)
     .setTitle(`💀 Phase ${game.phaseNumber} Complete!`)
@@ -112,7 +116,7 @@ function phaseEndEmbed(game, eliminated) {
       `**${eliminated.username}** never won a single round this phase — **eliminated!**\n\n` +
       `**Still standing:** ${remaining.map(p => p.username).join(", ") || "Nobody"}`
     )
-    .setFooter({ text: remaining.length > 1 ? `Phase ${game.phaseNumber + 1} starting soon…` : "" })
+    .setFooter({ text: nextText })
     .setTimestamp();
 }
 
