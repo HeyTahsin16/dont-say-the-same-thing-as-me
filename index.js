@@ -22,6 +22,9 @@ const { getPreviousAnswers, recordAnswer: recordAiAnswer } = require("./aiHistor
 const { recordPlayerAnswer, getTrappedPlayers, resetTrap } = require("./playerHistory");
 const { createSpeedGame, getSpeedGame, endSpeedGame } = require("./speedGameState");
 const { startRound: startSpeedRound, handleSpeedMessage, handleSpeedSkip } = require("./speedGame");
+const { createImageGame, getImageGame, endImageGame } = require("./imageGameState");
+const { startImageRound, handleImageMessage } = require("./imageGame");
+const { getSet } = require("./imageSets");
 
 // ─── ENV CHECKS ────────────────────────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -96,6 +99,32 @@ const commands = [
   new SlashCommandBuilder()
     .setName("endspeed")
     .setDescription("Force-end the current Speed Round game (starter or mod only)."),
+
+  new SlashCommandBuilder()
+    .setName("startimage")
+    .setDescription("Start an image identification game!")
+    .addStringOption(opt =>
+      opt
+        .setName("category")
+        .setDescription("Which image category to play")
+        .setRequired(true)
+        .addChoices(
+          { name: "🚩 Country Flags", value: "flags" },
+          // Add new categories here as you add image sets to imageSets.js
+        )
+    )
+    .addIntegerOption(opt =>
+      opt
+        .setName("points")
+        .setDescription("Points needed to win (default: 10)")
+        .setMinValue(1)
+        .setMaxValue(50)
+        .setRequired(false)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("endimage")
+    .setDescription("Force-end the current image game (starter or mod only)."),
 
   new SlashCommandBuilder()
     .setName("help")
@@ -655,6 +684,13 @@ async function resolveRound(game, channel) {
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
 
+  // ── Image game handler ────────────────────────────────────────────────────
+  const imageGame = getImageGame(message.channelId);
+  if (imageGame && imageGame.isActive()) {
+    await handleImageMessage(message, imageGame);
+    return; // only one game type runs per channel at a time
+  }
+
   // ── Speed game handler ─────────────────────────────────────────────────────
   const speedGame = getSpeedGame(message.channelId);
   if (speedGame && speedGame.isActive()) {
@@ -926,6 +962,73 @@ client.on(Events.InteractionCreate, async (interaction) => {
               "If you switched because of a rate limit error, the new model takes effect immediately — no restart needed. Any game currently in progress will use the new model from the next round onwards.",
           })
           .setFooter({ text: `Changed by ${user.username}` }),
+      ],
+    });
+  }
+
+  // ── /startimage ──
+  else if (commandName === "startimage") {
+    if (getImageGame(channelId)?.isActive()) {
+      return interaction.reply({ content: "⚠️ An image game is already running! Use `/endimage` to stop it.", flags: 64 });
+    }
+    if (getGame(channelId)?.isActive() || getSpeedGame(channelId)?.isActive()) {
+      return interaction.reply({ content: "⚠️ Another game is already running in this channel.", flags: 64 });
+    }
+
+    const setId    = interaction.options.getString("category");
+    const set      = getSet(setId);
+    if (!set) {
+      return interaction.reply({ content: "❌ Unknown category.", flags: 64 });
+    }
+
+    // Optional custom win score
+    const customScore = interaction.options.getInteger("points");
+    if (customScore) set.winScore = customScore;
+
+    const game = createImageGame(channelId, interaction.guildId, user.id, setId);
+
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Blurple)
+          .setTitle(`🖼️ Image Game — ${set.name}`)
+          .setDescription(
+            `**How to play:**\n` +
+            `• An image appears — type your answer in this channel\n` +
+            `• Anyone can join at any time just by answering\n` +
+            `• First correct answer gets a point ✅\n` +
+            `• Wrong answers get ❌ — keep trying!\n` +
+            `• First to **${set.winScore} points** wins the game 🏆\n` +
+            `• If no one answers for **60 seconds** — highest score wins\n\n` +
+            `First image in **5 seconds…**`
+          )
+          .setFooter({ text: `Category: ${set.name}` }),
+      ],
+    });
+
+    setTimeout(async () => {
+      await startImageRound(game, channel);
+    }, 5000);
+  }
+
+  // ── /endimage ──
+  else if (commandName === "endimage") {
+    const imageGame = getImageGame(channelId);
+    if (!imageGame) {
+      return interaction.reply({ content: "❌ No image game is running right now.", flags: 64 });
+    }
+    const member = interaction.member;
+    const canEnd = imageGame.startedBy === user.id || member?.permissions?.has("ManageMessages");
+    if (!canEnd) {
+      return interaction.reply({ content: "❌ Only the game starter or a moderator can force-end the game.", flags: 64 });
+    }
+    endImageGame(channelId);
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(Colors.Red)
+          .setTitle("🛑 Image Game Ended")
+          .setDescription(`Game force-ended by ${user.username}.`),
       ],
     });
   }
