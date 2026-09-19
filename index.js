@@ -175,7 +175,7 @@ function questionEmbed(game, question, roundNum, timerSecs) {
       (isFirstRound ? `Anyone who answers joins the game.\n\n` : `Just send a message — no command needed.\n\n`) +
       `👥 Players still in: **${activePlayers.map(p => p.username).join(", ") || "none"}**`
     )
-    .setFooter({ text: `Round ends in ${timerSecs}s • ${activePlayers.length} player(s) active` })
+    .setFooter({ text: `Round ends in ${timerSecs}s • ${activePlayers.length} player(s) active • ID: ${question.id}` })
     .setTimestamp();
 
   // No skip button in round 1 — players haven't joined yet
