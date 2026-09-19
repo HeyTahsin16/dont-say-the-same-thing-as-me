@@ -843,6 +843,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         flags: 64,
       });
     }
+    if (getSpeedGame(channelId)?.isActive() || getImageGame(channelId)?.isActive()) {
+      return interaction.reply({ content: "⚠️ Another game is already running in this channel.", flags: 64 });
+    }
 
     const game = createGame(channelId, interaction.guildId, user.id);
     const expectedPlayers = interaction.options.getInteger("players") ?? null;
@@ -1093,12 +1096,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // ── /startspeed ──
   else if (commandName === "startspeed") {
-    // Block if a speed game OR regular game is already running in this channel
+    // Block if any of the three modes is already running in this channel
     if (getSpeedGame(channelId)?.isActive()) {
       return interaction.reply({ content: "⚠️ A Speed Round game is already running! Use `/endspeed` to stop it.", flags: 64 });
     }
-    if (getGame(channelId)?.isActive()) {
-      return interaction.reply({ content: "⚠️ A regular game is already running in this channel.", flags: 64 });
+    if (getGame(channelId)?.isActive() || getImageGame(channelId)?.isActive()) {
+      return interaction.reply({ content: "⚠️ Another game is already running in this channel.", flags: 64 });
     }
 
     const expectedPlayers = interaction.options.getInteger("players") ?? null;
