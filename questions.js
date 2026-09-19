@@ -984,15 +984,6 @@ function getRandomQuestion() {
 // Category order from most answers to fewest
 const CATEGORY_ORDER = ["40+", "20-40", "10-20", "5-10", "1-5", "1-3"];
 
-function getCategoryForPlayerCount(count) {
-  if (count >= 30) return "40+";
-  if (count >= 15) return "20-40";
-  if (count >= 8)  return "10-20";
-  if (count >= 4)  return "5-10";
-  if (count >= 2)  return "1-5";
-  return "1-3";
-}
-
 function getNextCategory(currentCategory) {
   const idx = CATEGORY_ORDER.indexOf(currentCategory);
   if (idx === -1 || idx >= CATEGORY_ORDER.length - 1) return CATEGORY_ORDER[CATEGORY_ORDER.length - 1];
@@ -1044,20 +1035,28 @@ function compareQuestionDifficulty(a, b) {
   return (a.difficulty || 5) - (b.difficulty || 5);
 }
 
-// Builds an ascending-difficulty queue of up to `length` not-yet-used
-// questions from `category`. Deliberately spreads the picks across all ten
-// difficulty levels (roughly length/10 from each) rather than just taking
-// the `length` lowest-scoring questions overall — a category can easily
-// have 15+ questions at difficulty 1 alone, and grabbing a plain sorted
-// slice would then produce a "flat" batch that never climbs past 1. If a
-// level doesn't have enough unused questions left to fill its share, the
-// shortfall is topped up from whichever levels still have spare supply.
-function buildDifficultyQueue(category, usedQuestionIds, length) {
-  const pool = questions.filter(q => q.category === category && !usedQuestionIds.has(q.id));
+// Builds an ascending-difficulty queue of up to `length` questions from
+// `category`, preferring ones that have never been used before — in THIS
+// game (`sessionUsedIds`) or in any PAST game (`globalHistory`, an id ->
+// last-used-timestamp Map from questionHistory.js; pass an empty Map if you
+// don't have one, e.g. in tests). Deliberately spreads the picks across all
+// ten difficulty levels (roughly length/10 from each) rather than just
+// taking the `length` lowest-scoring questions overall — a category can
+// easily have 15+ questions at difficulty 1 alone, and grabbing a plain
+// sorted slice would then produce a "flat" batch that never climbs past 1.
+//
+// If a category's never-used-anywhere pool can't fill the whole batch (only
+// realistic after a LOT of games have been played), the shortfall is topped
+// up by reusing questions from past sessions, oldest-used first — never a
+// question already used THIS session, that invariant is absolute.
+function buildDifficultyQueue(category, sessionUsedIds, globalHistory, length) {
+  const neverUsedPool = questions.filter(q =>
+    q.category === category && !sessionUsedIds.has(q.id) && !globalHistory.has(q.id)
+  );
 
   const byLevel = new Map();
   for (let d = 1; d <= 10; d++) byLevel.set(d, []);
-  for (const q of pool) {
+  for (const q of neverUsedPool) {
     const d = Math.min(10, Math.max(1, q.difficulty || 5));
     byLevel.get(d).push(q);
   }
@@ -1084,6 +1083,18 @@ function buildDifficultyQueue(category, usedQuestionIds, length) {
     stillNeeded -= topUp.length;
   }
 
+  // Last resort: this category has run out of never-used-anywhere
+  // questions. Reuse ones from past sessions instead of coming up short —
+  // oldest-used first, so we reopen the longest-untouched question rather
+  // than one a recent session just asked.
+  if (stillNeeded > 0) {
+    const selectedIds = new Set(selected.map(q => q.id));
+    const reusePool = questions
+      .filter(q => q.category === category && !sessionUsedIds.has(q.id) && !selectedIds.has(q.id))
+      .sort((a, b) => (globalHistory.get(a.id) ?? 0) - (globalHistory.get(b.id) ?? 0));
+    selected.push(...reusePool.slice(0, stillNeeded));
+  }
+
   return selected.sort(compareQuestionDifficulty);
 }
 
@@ -1094,7 +1105,7 @@ function buildDifficultyQueue(category, usedQuestionIds, length) {
 // roundsOnCurrentCategory / categoryLockRounds now just calls this instead.
 function enterCategory(game, category) {
   const lockRounds = randomLockDuration(category);
-  const queue = buildDifficultyQueue(category, game.usedQuestionIds, lockRounds);
+  const queue = buildDifficultyQueue(category, game.usedQuestionIds, game.globalHistory || new Map(), lockRounds);
 
   game.currentCategory = category;
   game.roundsOnCurrentCategory = 1;
@@ -1138,15 +1149,23 @@ function applySkipReplacement(game) {
   // this is the very first question of a fresh visit) — the replacement
   // should be at least this hard so the ramp never steps backwards.
   const floorDifficulty = slot > 0 ? game.categoryQueue[slot - 1].difficulty : 0;
+  const globalHistory = game.globalHistory || new Map();
 
   const basePool = questions.filter(q => q.category === game.currentCategory
     && !game.usedQuestionIds.has(q.id)
     && !reservedIds.has(q.id));
 
-  const atOrAboveFloor = basePool.filter(q => q.difficulty >= floorDifficulty).sort(compareQuestionDifficulty);
+  // Prefer a question this category has never served in any past session;
+  // only reuse an older one (oldest-used first) if nothing fresh is left.
+  const neverUsedAnywhere = basePool.filter(q => !globalHistory.has(q.id));
+  const pool = neverUsedAnywhere.length > 0
+    ? neverUsedAnywhere
+    : [...basePool].sort((a, b) => (globalHistory.get(a.id) ?? 0) - (globalHistory.get(b.id) ?? 0));
+
+  const atOrAboveFloor = pool.filter(q => q.difficulty >= floorDifficulty).sort(compareQuestionDifficulty);
   // Nothing clears the floor (category running low) — take whichever
   // leftover question is closest to it from below, to keep the dip small.
-  const belowFloor = basePool.filter(q => q.difficulty < floorDifficulty).sort((a, b) => b.difficulty - a.difficulty);
+  const belowFloor = pool.filter(q => q.difficulty < floorDifficulty).sort((a, b) => b.difficulty - a.difficulty);
   const replacement = atOrAboveFloor[0] || belowFloor[0];
   if (!replacement) return null;
 
@@ -1158,44 +1177,37 @@ function applySkipReplacement(game) {
   return game.categoryQueue[slot];
 }
 
-function resolveCategory(game, activePlayerCount) {
-  if (game.round === 1) {
+// Chooses which category the game should be playing right now. This is a
+// simple, fixed march through CATEGORY_ORDER: every category always gets
+// its own full 10-15 question batch (see enterCategory()) before the game
+// moves on to the next, narrower one. Once "1-3" (the last, narrowest tier)
+// is reached, getNextCategory() just keeps returning "1-3", so it re-locks
+// with a fresh batch and cycles there for as long as the game continues.
+//
+// This used to also factor in active player count — a bigger lobby got a
+// bigger starting pool, and a shrinking one got fast-tracked toward
+// narrower categories (including an "emergency" jump ahead an extra tier
+// whenever the player-count-implied category was 2+ tiers narrower than the
+// current one). That's been removed: for a typical small lobby (3-4
+// players), the player-count-implied category was already narrow from
+// round 2 onward, so that emergency jump fired almost immediately and kept
+// firing — cutting most categories' batches short by several tiers at once
+// instead of letting any of them play out to their full 10-15 questions.
+// Since the answer pool narrowing is already fully driven by which category
+// we're in, player count doesn't need to also gate category selection.
+function resolveCategory(game) {
+  if (game.round === 1 || !game.currentCategory) {
     return enterCategory(game, "40+");
-  }
-
-  const naturalCat = getCategoryForPlayerCount(activePlayerCount);
-
-  if (!game.currentCategory) {
-    return enterCategory(game, naturalCat);
   }
 
   game.roundsOnCurrentCategory++;
 
-  // "lockedIn" just means "this category's queue isn't finished yet". There's
-  // no more permanently-locked terminal category — even "1-3" (the last,
-  // narrowest entry in CATEGORY_ORDER) rolls a fresh 10-15 easy-to-hard
-  // queue every time its current one runs out, for as long as the game
-  // keeps going (there's nowhere narrower left to advance to).
-  const lockedIn = game.roundsOnCurrentCategory <= game.categoryLockRounds;
-  const currentIdx = CATEGORY_ORDER.indexOf(game.currentCategory);
-  const naturalIdx = CATEGORY_ORDER.indexOf(naturalCat);
-
-  if (lockedIn) {
-    if (naturalIdx >= currentIdx + 2) {
-      const newCat = CATEGORY_ORDER[Math.min(currentIdx + 1, CATEGORY_ORDER.length - 1)];
-      return enterCategory(game, newCat);
-    }
+  const batchFinished = game.roundsOnCurrentCategory > game.categoryLockRounds;
+  if (!batchFinished) {
     return game.currentCategory;
   }
 
-  let newCat = game.currentCategory;
-  if (naturalIdx > currentIdx) {
-    newCat = CATEGORY_ORDER[currentIdx + 1];
-  } else if (naturalIdx < currentIdx) {
-    newCat = CATEGORY_ORDER[Math.max(currentIdx - 1, 0)];
-  }
-
-  return enterCategory(game, newCat);
+  return enterCategory(game, getNextCategory(game.currentCategory));
 }
 
 module.exports = {
@@ -1204,7 +1216,6 @@ module.exports = {
   getRandomQuestion,
   CATEGORY_ORDER,
   QUESTIONS_PER_CATEGORY_VISIT,
-  getCategoryForPlayerCount,
   resolveCategory,
   getNextCategory,
   getPrevCategory,

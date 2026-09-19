@@ -30,6 +30,14 @@ class GameState {
     this.resultTimer = null;
 
     this.usedQuestionIds = new Set();
+    // Questions used in PAST sessions (id -> last-used timestamp), seeded
+    // from questionHistory.js right after this GameState is created. Kept
+    // separate from usedQuestionIds (this session only) so questions.js can
+    // strongly prefer never-used-anywhere questions while still allowing a
+    // last-resort reuse of old ones if a category's fresh pool runs dry —
+    // see buildDifficultyQueue() in questions.js. Defaults to empty so
+    // nothing breaks if a caller forgets to set it.
+    this.globalHistory   = new Map();
     this.skipVotes       = new Set();
     this.skipUsedRounds  = new Set();
 
