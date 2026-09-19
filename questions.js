@@ -992,25 +992,6 @@ function getCategoryForPlayerCount(count) {
   return "1-3";
 }
 
-// Per-category question count ranges (min inclusive, max inclusive).
-// "1-3" is null — it cycles forever with no cap.
-const CATEGORY_LOCK_RANGES = {
-  "40+":   { min: 5,  max: 7  },   // ~6 questions
-  "20-40": { min: 10, max: 13 },   // ~10-13 questions
-  "10-20": { min: 8,  max: 11 },   // ~8-11 questions
-  "5-10":  { min: 6,  max: 9  },   // ~6-9 questions
-  "1-5":   { min: 4,  max: 7  },   // ~4-7 questions
-  "1-3":   null,                    // infinite — cycles forever
-};
-
-// Returns a random lock duration for the given category.
-// Returns Infinity for "1-3" so it never advances to a non-existent harder tier.
-function randomLockDuration(category) {
-  const range = CATEGORY_LOCK_RANGES[category];
-  if (!range) return Infinity;
-  return range.min + Math.floor(Math.random() * (range.max - range.min + 1));
-}
-
 function getNextCategory(currentCategory) {
   const idx = CATEGORY_ORDER.indexOf(currentCategory);
   if (idx === -1 || idx >= CATEGORY_ORDER.length - 1) return CATEGORY_ORDER[CATEGORY_ORDER.length - 1];
@@ -1023,31 +1004,177 @@ function getPrevCategory(currentCategory) {
   return CATEGORY_ORDER[idx - 1];
 }
 
+// Legacy helper — compares two *categories* by their position in
+// CATEGORY_ORDER (kept for backwards compatibility). To compare two
+// *questions* by their 1-10 difficulty weight instead, see
+// compareQuestionDifficulty() below.
 function compareDifficulty(a, b) {
   return CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b);
 }
 
+// ─── Difficulty-ordered category queues ────────────────────────────────────
+// Every question also carries a `difficulty` weight from 1 (easiest) to 10
+// (hardest) — see scripts/assign-difficulty.js for how these were generated.
+// This is a *separate* axis from `category` (still just the size of the
+// real-world answer pool, e.g. "40+" vs "1-3"). The two combine like this
+// every time a category is (re)locked in:
+//
+//   1. Take every not-yet-used question in that category.
+//   2. Sort them by `difficulty`, ascending (same-difficulty ties shuffled).
+//   3. Queue up the first 10-15 of them.
+//
+// The game then serves that queue in order, one per round, so a category
+// visit always opens on its easiest question and closes on its hardest
+// before the game moves on to the next (narrower) category — which then
+// runs the exact same easy-to-hard ramp again. That queue length (10-15,
+// instead of the old flat 3-13-ish round lock) is also what makes each
+// category visit — and so the whole game — last a lot longer.
+const QUESTIONS_PER_CATEGORY_VISIT = { min: 10, max: 15 };
+
+// How many questions to line up for the next category visit. This also
+// doubles as the round-lock duration resolveCategory() uses below — a visit
+// now lasts exactly as long as its queue does.
+function randomLockDuration(category) {
+  const { min, max } = QUESTIONS_PER_CATEGORY_VISIT;
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function compareQuestionDifficulty(a, b) {
+  return (a.difficulty || 5) - (b.difficulty || 5);
+}
+
+// Builds an ascending-difficulty queue of up to `length` not-yet-used
+// questions from `category`. Deliberately spreads the picks across all ten
+// difficulty levels (roughly length/10 from each) rather than just taking
+// the `length` lowest-scoring questions overall — a category can easily
+// have 15+ questions at difficulty 1 alone, and grabbing a plain sorted
+// slice would then produce a "flat" batch that never climbs past 1. If a
+// level doesn't have enough unused questions left to fill its share, the
+// shortfall is topped up from whichever levels still have spare supply.
+function buildDifficultyQueue(category, usedQuestionIds, length) {
+  const pool = questions.filter(q => q.category === category && !usedQuestionIds.has(q.id));
+
+  const byLevel = new Map();
+  for (let d = 1; d <= 10; d++) byLevel.set(d, []);
+  for (const q of pool) {
+    const d = Math.min(10, Math.max(1, q.difficulty || 5));
+    byLevel.get(d).push(q);
+  }
+  for (const group of byLevel.values()) {
+    for (let i = group.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [group[i], group[j]] = [group[j], group[i]];
+    }
+  }
+
+  const base = Math.floor(length / 10);
+  const extra = length % 10;
+  const selected = [];
+
+  for (let d = 1; d <= 10; d++) {
+    const want = base + (d <= extra ? 1 : 0);
+    selected.push(...byLevel.get(d).splice(0, want));
+  }
+
+  let stillNeeded = length - selected.length;
+  for (let d = 1; d <= 10 && stillNeeded > 0; d++) {
+    const topUp = byLevel.get(d).splice(0, stillNeeded);
+    selected.push(...topUp);
+    stillNeeded -= topUp.length;
+  }
+
+  return selected.sort(compareQuestionDifficulty);
+}
+
+// (Re)locks `game` into `category`: rolls a fresh 10-15 queue length, builds
+// its difficulty-ordered queue from whatever in that category hasn't been
+// used yet this game, and resets the round-lock counter. Every branch of
+// resolveCategory() that used to hand-set currentCategory /
+// roundsOnCurrentCategory / categoryLockRounds now just calls this instead.
+function enterCategory(game, category) {
+  const lockRounds = randomLockDuration(category);
+  const queue = buildDifficultyQueue(category, game.usedQuestionIds, lockRounds);
+
+  game.currentCategory = category;
+  game.roundsOnCurrentCategory = 1;
+  // If fewer than `lockRounds` unused questions remain, shrink the lock to
+  // match — otherwise resolveCategory would think we're still "locked in"
+  // after the queue has already run dry.
+  game.categoryLockRounds = queue.length > 0 ? queue.length : lockRounds;
+  game.categoryQueue = queue;
+  game.categoryQueueIndex = 0;
+
+  return category;
+}
+
+// Pulls the next question off game.categoryQueue, in ascending-difficulty
+// order. Returns null once the current category's queue is exhausted — that
+// should only happen if a category's whole pool has been used up this game
+// (resolveCategory is expected to have already moved to a new category
+// before then, so this is mainly a safety net).
+function getNextQueuedQuestion(game) {
+  if (!game.categoryQueue || game.categoryQueueIndex >= game.categoryQueue.length) {
+    return null;
+  }
+  return game.categoryQueue[game.categoryQueueIndex++];
+}
+
+// Handles the ⏭️ Skip button: replaces the just-served question (at
+// game.categoryQueueIndex - 1) with a fresh one from the same category —
+// not already used, and not already sitting later in this visit's queue.
+// Rather than just swapping it in place, this re-sorts it together with the
+// still-unserved rest of the queue, so the ascending difficulty ramp for
+// the remainder of the category visit is never disturbed by a skip.
+// Returns the new question to show for this round, or null if the category
+// has nothing left to offer.
+function applySkipReplacement(game) {
+  if (!game.categoryQueue || game.categoryQueueIndex <= 0) return null;
+
+  const slot = game.categoryQueueIndex - 1;
+  const stillUnserved = game.categoryQueue.slice(slot + 1);
+  const reservedIds = new Set(stillUnserved.map(q => q.id));
+  // Whatever was already served right before this slot this visit (0 if
+  // this is the very first question of a fresh visit) — the replacement
+  // should be at least this hard so the ramp never steps backwards.
+  const floorDifficulty = slot > 0 ? game.categoryQueue[slot - 1].difficulty : 0;
+
+  const basePool = questions.filter(q => q.category === game.currentCategory
+    && !game.usedQuestionIds.has(q.id)
+    && !reservedIds.has(q.id));
+
+  const atOrAboveFloor = basePool.filter(q => q.difficulty >= floorDifficulty).sort(compareQuestionDifficulty);
+  // Nothing clears the floor (category running low) — take whichever
+  // leftover question is closest to it from below, to keep the dip small.
+  const belowFloor = basePool.filter(q => q.difficulty < floorDifficulty).sort((a, b) => b.difficulty - a.difficulty);
+  const replacement = atOrAboveFloor[0] || belowFloor[0];
+  if (!replacement) return null;
+
+  const merged = [...stillUnserved, replacement].sort(compareQuestionDifficulty);
+  for (let i = 0; i < merged.length; i++) {
+    game.categoryQueue[slot + i] = merged[i];
+  }
+
+  return game.categoryQueue[slot];
+}
+
 function resolveCategory(game, activePlayerCount) {
   if (game.round === 1) {
-    const cat = "40+";
-    game.currentCategory = cat;
-    game.roundsOnCurrentCategory = 1;
-    game.categoryLockRounds = randomLockDuration(cat);
-    return cat;
+    return enterCategory(game, "40+");
   }
 
   const naturalCat = getCategoryForPlayerCount(activePlayerCount);
 
   if (!game.currentCategory) {
-    game.currentCategory = naturalCat;
-    game.roundsOnCurrentCategory = 1;
-    game.categoryLockRounds = randomLockDuration(naturalCat);
-    return naturalCat;
+    return enterCategory(game, naturalCat);
   }
 
   game.roundsOnCurrentCategory++;
 
-  // For infinite categories (1-3), lockedIn is always true — never advances
+  // "lockedIn" just means "this category's queue isn't finished yet". There's
+  // no more permanently-locked terminal category — even "1-3" (the last,
+  // narrowest entry in CATEGORY_ORDER) rolls a fresh 10-15 easy-to-hard
+  // queue every time its current one runs out, for as long as the game
+  // keeps going (there's nowhere narrower left to advance to).
   const lockedIn = game.roundsOnCurrentCategory <= game.categoryLockRounds;
   const currentIdx = CATEGORY_ORDER.indexOf(game.currentCategory);
   const naturalIdx = CATEGORY_ORDER.indexOf(naturalCat);
@@ -1055,10 +1182,7 @@ function resolveCategory(game, activePlayerCount) {
   if (lockedIn) {
     if (naturalIdx >= currentIdx + 2) {
       const newCat = CATEGORY_ORDER[Math.min(currentIdx + 1, CATEGORY_ORDER.length - 1)];
-      game.currentCategory = newCat;
-      game.roundsOnCurrentCategory = 1;
-      game.categoryLockRounds = randomLockDuration(newCat);
-      return newCat;
+      return enterCategory(game, newCat);
     }
     return game.currentCategory;
   }
@@ -1070,10 +1194,7 @@ function resolveCategory(game, activePlayerCount) {
     newCat = CATEGORY_ORDER[Math.max(currentIdx - 1, 0)];
   }
 
-  game.currentCategory = newCat;
-  game.roundsOnCurrentCategory = 1;
-  game.categoryLockRounds = randomLockDuration(newCat);
-  return newCat;
+  return enterCategory(game, newCat);
 }
 
 module.exports = {
@@ -1081,10 +1202,14 @@ module.exports = {
   getQuestionByCategory,
   getRandomQuestion,
   CATEGORY_ORDER,
-  CATEGORY_LOCK_RANGES,
+  QUESTIONS_PER_CATEGORY_VISIT,
   getCategoryForPlayerCount,
   resolveCategory,
   getNextCategory,
   getPrevCategory,
   compareDifficulty,
+  compareQuestionDifficulty,
+  buildDifficultyQueue,
+  getNextQueuedQuestion,
+  applySkipReplacement,
 };
