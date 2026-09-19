@@ -16,7 +16,7 @@ const {
 
 const { initGemini, judgeRound, setModel, getModel, getAvailableModels } = require("./gemini");
 const { createGame, getGame, endGame, ROUND_ONE_DURATION_MS, ROUND_DURATION_MS, RESULT_DURATION_MS } = require("./gameState");
-const { getQuestionByCategory, resolveCategory } = require("./questions");
+const { resolveCategory, getNextQueuedQuestion, applySkipReplacement } = require("./questions");
 const { recordWin, getTopPlayers } = require("./leaderboard");
 const { getPreviousAnswers, recordAnswer: recordAiAnswer } = require("./aiHistory");
 const { recordPlayerAnswer, getTrappedPlayers, resetTrap } = require("./playerHistory");
@@ -153,14 +153,24 @@ const client = new Client({
 });
 
 // ─── EMBED HELPERS ─────────────────────────────────────────────────────────────
+function difficultyBadge(difficulty) {
+  const d = difficulty || 5;
+  const dot = d <= 3 ? "🟢" : d <= 7 ? "🟡" : "🔴";
+  return `${dot} ${d}/10`;
+}
+
 function questionEmbed(game, question, roundNum, timerSecs) {
   const activePlayers = game.getActivePlayers();
   const isFirstRound = roundNum === 1;
+  const queueLen = game.categoryQueue ? game.categoryQueue.length : 0;
+  const queuePos = Math.min(game.categoryQueueIndex, queueLen);
   const embed = new EmbedBuilder()
     .setColor(Colors.Blue)
     .setTitle(`🎮 Round ${roundNum} — Category: **${question.category}** answers`)
     .setDescription(
       `**Question:** ${question.question}\n\n` +
+      `🎯 **Difficulty:** ${difficultyBadge(question.difficulty)}` +
+      (queueLen ? `  •  Question ${queuePos}/${queueLen} in this category\n\n` : `\n\n`) +
       `⏱️ **You have ${timerSecs} seconds to type your answer in this channel!**\n` +
       (isFirstRound ? `Anyone who answers joins the game.\n\n` : `Just send a message — no command needed.\n\n`) +
       `👥 Players still in: **${activePlayers.map(p => p.username).join(", ") || "none"}**`
@@ -302,20 +312,15 @@ async function startRound(game, channel) {
   game.eliminatedThisRound = [];
   game.survivorsThisRound = [];
 
-  // ── Dynamic category ────────────────────────────────────────────────────
+  // ── Dynamic category + difficulty ───────────────────────────────────────
   // resolveCategory looks at active player count + how long we've been on the
-  // current difficulty, and decides whether to stay, step up, or step back.
+  // current category, and decides whether to stay, step up, or step back. On
+  // every (re)lock it also lines up a fresh 10-15 question queue for that
+  // category, sorted from easiest to hardest — see questions.js.
   const activeCount = game.getActivePlayers().length;
   const category = resolveCategory(game, activeCount);
 
-  // Pick a question not used before in this category
-  let question = null;
-  let tries = 0;
-  do {
-    question = getQuestionByCategory(category);
-    tries++;
-    if (tries > 20) break;
-  } while (question && game.usedQuestionIds.has(question.id));
+  const question = getNextQueuedQuestion(game);
 
   if (!question) {
     await channel.send("⚠️ Ran out of questions for this category! Game over.");
@@ -363,14 +368,10 @@ async function skipRound(game, channel) {
 
   const activePlayers = game.getActivePlayers();
 
-  // Pick a replacement question from the same category (not used before)
-  let newQuestion = null;
-  let tries = 0;
-  do {
-    newQuestion = getQuestionByCategory(game.currentCategory);
-    tries++;
-    if (tries > 20) break;
-  } while (newQuestion && game.usedQuestionIds.has(newQuestion.id));
+  // Pick a replacement of at least the same difficulty from the same
+  // category (not used, and not already queued later this visit) — this
+  // keeps the category's easy-to-hard ramp intact even after a skip.
+  const newQuestion = applySkipReplacement(game);
 
   if (!newQuestion) {
     await channel.send("⚠️ No replacement question available — ending round normally.");
@@ -1073,7 +1074,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             {
               name: "Round Progression",
               value:
-                "Each round uses a harder category (fewer valid answers). Rounds go:\n`40+` → `20-40` → `10-20` → `5-10` → `1-5` → `1-3`\nThe fewer options there are, the harder it is to avoid the AI!",
+                "Each category deals out **10-15 questions** — easiest first, hardest last — before the game moves to a harder category (fewer valid answers):\n`40+` → `20-40` → `10-20` → `5-10` → `1-5` → `1-3`\nEvery question also has its own **difficulty from 1 (easiest) to 10 (hardest)**, shown on the question card. Fewer answer options *and* tougher questions means the AI gets harder and harder to dodge!",
             },
             {
               name: "Winning",

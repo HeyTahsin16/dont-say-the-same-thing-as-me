@@ -40,9 +40,18 @@ class GameState {
 
     // ── Dynamic difficulty tracking ──────────────────────────────────────────
     // How many rounds to stay on the current category before re-evaluating.
-    // Randomised between 3–5 each time a new category is locked in.
+    // Randomised between 10-15 each time a category is (re)locked in — see
+    // enterCategory() in questions.js, which also builds categoryQueue below.
     this.roundsOnCurrentCategory = 0;   // how many rounds we've been on this cat
-    this.categoryLockRounds       = 0;  // how many rounds to stay (3-5)
+    this.categoryLockRounds       = 0;  // how many rounds to stay (10-15)
+
+    // Ascending-difficulty (1→10) list of questions queued up for the
+    // current category visit, plus which slot is next. Built fresh by
+    // questions.js's enterCategory()/resolveCategory() every time the
+    // category changes (or re-locks into itself); consumed one-by-one by
+    // getNextQueuedQuestion(). See questions.js for the full picture.
+    this.categoryQueue      = [];
+    this.categoryQueueIndex = 0;
   }
 
   addPlayer(userId, username) {
