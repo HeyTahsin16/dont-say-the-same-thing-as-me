@@ -27,24 +27,24 @@ The AI deliberately picks the **most instinctive, default answer** — the one m
 - **Early skip:** If all active players answer before time's up, the round resolves immediately
 
 ### Dynamic Difficulty
-Questions are selected based on how many players are still active — not just the round number.
+Every game works through all six answer-pool categories in a fixed order, each one dealing out a full **10-15 question batch** before the game moves to the next, harder one:
 
-| Active players | Category |
-|---|---|
-| 30+ | `40+` answers |
-| 15–29 | `20-40` answers |
-| 8–14 | `10-20` answers |
-| 4–7 | `5-10` answers |
-| 2–3 | `1-5` answers |
-| 1 | `1-3` answers |
+`40+` → `20-40` → `10-20` → `5-10` → `1-5` → `1-3`
 
-Every question also carries its own **difficulty weight from 1 (easiest) to 10 (hardest)** — a second axis, independent of category, for how obscure the *topic* itself is (see [Adding More Questions](#adding-more-questions)). Each time a category locks in, the bot lines up **10-15 questions** from it (instead of a quick handful) spread across that whole 1-10 range, so a category visit always opens on its easiest question and climbs to its hardest before the game moves on to the next, narrower category and starts the easy-to-hard ramp again. Skipping a question (see below) swaps in a replacement of at least the same difficulty, so the ramp never steps backwards. This makes a full game meaningfully longer, and means the challenge builds from two directions at once: the answer pool keeps shrinking *and* the questions keep getting harder. If the active player count keeps a category relevant for longer than one 10-15 batch, the bot just deals a fresh batch rather than force-advancing — the category only narrows once the players do.
+(Categories are named after roughly how many valid real-world answers exist for a question in that tier — `40+` is the most forgiving, `1-3` the least.) Once `1-3` is reached, the bot just keeps dealing fresh 10-15 question batches of it for as long as the game continues, since there's nowhere narrower left to go. Earlier versions picked the category from how many players were still active, but for a typical small lobby that meant most categories got skipped past within the first round or two instead of getting their full batch — so category progression is no longer tied to player count at all.
+
+Every question also carries its own **difficulty weight from 1 (easiest) to 10 (hardest)** — a second axis, independent of category, for how obscure the *topic* itself is (see [Adding More Questions](#adding-more-questions)). Each 10-15 question batch is spread across that whole 1-10 range, so a category visit always opens on its easiest question and climbs to its hardest before moving on. Skipping a question (see below) swaps in a replacement of at least the same difficulty, so the ramp never steps backwards. This makes a full game meaningfully longer, and means the challenge builds from two directions at once: the answer pool keeps shrinking *and* the questions keep getting harder.
+
+The bot also remembers every question it's ever asked, across all past games (not just the current one) — see [Repeat Prevention](#repeat-prevention) below.
 
 ### Anti-Camping System
 Player answers are tracked across sessions per question. If a player repeatedly uses the same answer for the same question, the bot secretly "loads" that answer as the AI's pick — eliminating them. The trap fires randomly between the 3rd and 5th repeated use so campers can't predict when they'll get caught.
 
 ### AI Answer Variety
 The AI remembers up to 50 previous answers per question across all sessions and avoids repeating them. This prevents players from memorising what the AI always says. For narrow categories (`1-3`, `1-5`), the avoid list clears automatically when answers run low so the AI never gets stuck.
+
+### Repeat Prevention
+No-repeat-within-a-game was always true, but a question could still resurface in your *next* game — with 961 questions but only ~17 at the easiest difficulty level of the widest category, a brand new game had a real chance of opening on something you'd just been asked. The bot now remembers every question id it has ever served, across every past session (`data/question_history.json`), and a new game is seeded with that history so it only reaches for questions that haven't come up before. If a category's supply of never-asked questions ever runs low (only realistic after a lot of games), it reuses the longest-untouched question in that category rather than a random recent one.
 
 ---
 
@@ -184,6 +184,7 @@ dont-say-the-same-thing-as-me/
 ├── leaderboard.js      # Win tracker → data/leaderboard.json
 ├── aiHistory.js        # AI answer history → data/ai_history.json
 ├── playerHistory.js    # Anti-camping tracker → data/player_history.json
+├── questionHistory.js  # Cross-session question memory → data/question_history.json
 ├── railway.toml        # Railway build + start config
 ├── package.json
 ├── .env                # Your secrets (never commit!)
@@ -196,6 +197,7 @@ dont-say-the-same-thing-as-me/
 - `leaderboard.json` — win counts per player
 - `ai_history.json` — AI answer history per question (prevents repetition)
 - `player_history.json` — per-player answer history per question (anti-camping)
+- `question_history.json` — every question id ever served + when (prevents cross-session repeats)
 
 ---
 
