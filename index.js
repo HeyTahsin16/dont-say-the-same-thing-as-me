@@ -17,6 +17,7 @@ const {
 const { initGemini, judgeRound, setModel, getModel, getAvailableModels } = require("./gemini");
 const { createGame, getGame, endGame, ROUND_ONE_DURATION_MS, ROUND_DURATION_MS, RESULT_DURATION_MS } = require("./gameState");
 const { resolveCategory, getNextQueuedQuestion, applySkipReplacement } = require("./questions");
+const { getGlobalHistory, recordQuestionUsed } = require("./questionHistory");
 const { recordWin, getTopPlayers } = require("./leaderboard");
 const { getPreviousAnswers, recordAnswer: recordAiAnswer } = require("./aiHistory");
 const { recordPlayerAnswer, getTrappedPlayers, resetTrap } = require("./playerHistory");
@@ -312,13 +313,12 @@ async function startRound(game, channel) {
   game.eliminatedThisRound = [];
   game.survivorsThisRound = [];
 
-  // ── Dynamic category + difficulty ───────────────────────────────────────
-  // resolveCategory looks at active player count + how long we've been on the
-  // current category, and decides whether to stay, step up, or step back. On
-  // every (re)lock it also lines up a fresh 10-15 question queue for that
-  // category, sorted from easiest to hardest — see questions.js.
-  const activeCount = game.getActivePlayers().length;
-  const category = resolveCategory(game, activeCount);
+  // ── Category + difficulty ───────────────────────────────────────────────
+  // resolveCategory steps through categories in a fixed order, always
+  // giving each one its own full 10-15 question batch first. On every
+  // (re)lock it also lines up a fresh queue for that category, sorted from
+  // easiest to hardest — see questions.js.
+  const category = resolveCategory(game);
 
   const question = getNextQueuedQuestion(game);
 
@@ -329,6 +329,7 @@ async function startRound(game, channel) {
   }
 
   game.usedQuestionIds.add(question.id);
+  recordQuestionUsed(question.id); // remembered across future sessions too
   game.currentQuestion = question;
   game.skipVotes.clear();
 
@@ -380,6 +381,7 @@ async function skipRound(game, channel) {
   }
 
   game.usedQuestionIds.add(newQuestion.id);
+  recordQuestionUsed(newQuestion.id); // remembered across future sessions too
   game.currentQuestion = newQuestion;
   game.skipVotes.clear();
   game.roundAnswers.clear();
@@ -848,6 +850,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     const game = createGame(channelId, interaction.guildId, user.id);
+    game.globalHistory = getGlobalHistory(); // avoid questions past sessions already asked
     const expectedPlayers = interaction.options.getInteger("players") ?? null;
     game.expectedPlayers = expectedPlayers;
 
