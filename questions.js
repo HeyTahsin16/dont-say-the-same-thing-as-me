@@ -1021,7 +1021,7 @@ function compareDifficulty(a, b) {
 // runs the exact same easy-to-hard ramp again. That queue length (10-15,
 // instead of the old flat 3-13-ish round lock) is also what makes each
 // category visit — and so the whole game — last a lot longer.
-const QUESTIONS_PER_CATEGORY_VISIT = { min: 10, max: 15 };
+const QUESTIONS_PER_CATEGORY_VISIT = { min: 6, max: 9 };
 
 // How many questions to line up for the next category visit. This also
 // doubles as the round-lock duration resolveCategory() uses below — a visit
